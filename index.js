@@ -5,6 +5,7 @@ const config = require('./config');
 // bring in packages
 const Snoocore = require('snoocore');
 const co = require('co');
+const mysql = require('promise-mysql');
 const moment = require('moment');
 
 // set up some constants
@@ -12,6 +13,8 @@ const moment = require('moment');
 const COMMENTS_FRESH = 2;
 // how much time before a post is considered stale (in minutes)
 const TIME_FRESH = 60;
+
+var connection;
 
 // Our new instance associated with a single account.
 // It takes in various configuration options.
@@ -35,19 +38,20 @@ co(function *(){
   let loginResult = yield reddit('/api/v1/me').get();
   console.log(`*  : ${loginResult.name} has logged in.`);
   let listingResult = yield reddit('/r/borrow/new').listing();
+  connection = yield mysql.createConnection({
+      host: config.db.host,
+      user: config.db.user,
+      password: config.db.password,
+      database: config.db.database
+  });
   var posts = [];
   for (let post of listingResult.get.data.children){
-    posts.push(processPost(post.data));
+    let newPost = processPost(post.data);
+    yield storePost(newPost);
+    posts.push(newPost);
   }
-  //build preferred list
-  var prefPosts = [];
-  for (let post of posts){
-    let prefPost = displayPost(post);
-    if (prefPost !== null){
-      prefPosts.push(post);
-    }
-  }
-  console.log(JSON.stringify(prefPosts, null, 2));
+  console.log("*  : Everything is finished. End?");
+  return process.exit();
 }).catch(onerror);
 
 function onerror(err) {
@@ -57,14 +61,17 @@ function onerror(err) {
   console.error(err.stack);
 }
 
-function displayPost(post){
-  if (post.type !== "REQ"){return null;}
-  if (post.freshness.comments !== "Fresh"){return null;}
-  if (post.amounts === null){return null;}
-  if (post.amounts.interest === null){return null;}
-  if (post.amounts.interest === "???"){return null;}
-  if (post.amounts.interest < 10){return null;}
-  return post;
+function* storePost (post){
+  let countResults = yield connection.query(`SELECT id FROM posts WHERE id = '${post.id}';`);
+  if (!countResults[0]){
+    //this post doesn't exist in the DB
+    console.log(`*  : Storing ${post.id} into DB`)
+    return yield connection.query('INSERT INTO posts SET ?', post);
+  }else{
+    //this post already exists in the DB
+    console.log(`*  : ${post.id} already exists in DB`)
+    return yield {};
+  }
 }
 
 function processPost(post){
@@ -73,39 +80,54 @@ function processPost(post){
   // process post functions
   function processPostByType(title){
     var returnObj = {};
+    // set patterns for request type
     let reqPost = /\[REQ\].?/gi;
     let paidPost = /\[PAID\].?/gi;
     let metaPost = /\[META\].?/gi;
     let unpaidPost = /\[UNPAID\].?/gi;
+    // set some values for everyone
+    returnObj.id = post.id;
+    returnObj.poster = post.author;
+    returnObj.title = post.title;
+    returnObj.body = post.selftext;
+    returnObj.created = moment.unix(post.created_utc).local().format("YYYY-MM-DD HH:mm:ss");
+    returnObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
+    returnObj.comments = post.num_comments;
     if (reqPost.exec(post.title) !== null){
       returnObj.type = "REQ";
-      returnObj.id = post.id;
-      returnObj.title = post.title;
-      returnObj.amounts = processPostAmounts(post.title);
+      let amounts = processPostAmounts(post.title);
+      // process amounts for DB insertion
+      returnObj.borrow_amnt = amounts.borrowAmnt;
+      returnObj.repay_amnt = amounts.repayAmnt;
+      returnObj.interest = amounts.interest;
       returnObj.currency = processPostCurrency(post.title);
-      returnObj.freshness = processPostFreshness(post);
-      returnObj.dates = processPostDates(post.title);
+      //returnObj.freshness = processPostFreshness(post);
+      let dates = processPostDates(post.title);
+      returnObj.repay_date = dates.date;
       return returnObj;
     }
     if (paidPost.exec(post.title) !== null){
       returnObj.type = "PAID";
-      returnObj.id = post.id;
-      returnObj.amounts = processPostAmounts(post.title);
+      let amounts = processPostAmounts(post.title);
+      // process amounts for DB insertion
+      returnObj.borrow_amnt = amounts.borrowAmnt;
+      returnObj.repay_amnt = amounts.repayAmnt;
+      returnObj.interest = amounts.interest;
       returnObj.currency = processPostCurrency(post.title);
-      //returnObj.dates = processPostDates(post);
       return returnObj;
     }
     if (unpaidPost.exec(post.title) !== null){
       returnObj.type = "UNPAID";
-      returnObj.id = post.id;
-      returnObj.amounts = processPostAmounts(post.title);
+      let amounts = processPostAmounts(post.title);
+      // process amounts for DB insertion
+      returnObj.borrow_amnt = amounts.borrowAmnt;
+      returnObj.repay_amnt = amounts.repayAmnt;
+      returnObj.interest = amounts.interest;
       returnObj.currency = processPostCurrency(post.title);
-      //returnObj.dates = processPostDates(post);
       return returnObj;
     }
     if (metaPost.exec(post.title) !== null){
       returnObj.type = "META";
-      returnObj.id = post.id;
       return returnObj;
     }
     return null;
@@ -120,29 +142,37 @@ function processPost(post){
     var twoAmountMatch = twoAmount.exec(title);
     if (twoAmountMatch !== null){
       // there was a match, return out
-      returnObj.borrowAmnt = twoAmountMatch[1];
-      returnObj.repayAmnt = twoAmountMatch[2];
+      returnObj.borrowAmnt = twoAmountMatch[1].replace(/,/g, '');
+      returnObj.repayAmnt = twoAmountMatch[2].replace(/,/g, '');
       returnObj.interest = Math.round((returnObj.repayAmnt - returnObj.borrowAmnt) / returnObj.borrowAmnt * 1000) / 10;
       return returnObj;
     }
     var oneAmountMatch = oneAmount.exec(title);
     if (oneAmountMatch !== null){
       // there was a match, return out
-      returnObj.borrowAmnt = oneAmountMatch[1];
-      returnObj.repayAmnt = "???";
-      returnObj.interest = "???";
+      returnObj.borrowAmnt = oneAmountMatch[1].replace(/,/g, '');
+      let percInt = /(\d+)\%/gi;
+      var percIntMatch = percInt.exec(title);
+      if (percIntMatch !== null){
+        // they are manually specifying an interest amount, we can work with this.
+        returnObj.interest = percIntMatch[1];
+        returnObj.repayAmnt = returnObj.borrowAmnt * ((percIntMatch[1] / 100) + 1);
+      }else{
+        returnObj.repayAmnt = null;
+        returnObj.interest = null;
+      }
       return returnObj;
     }
-    return null;
+    return {borrowAmnt: null, repayAmnt: null, interest: null};
   }
 
   function processPostCurrency(title){
     var returnObj = {};
     // define all the patterns for currency matching
-    let CAD = /\[REQ\].+(CAD)/gi;
-    let GBP = /\[REQ\].+(£|GBP)/gi;
-    let EUR = /\[REQ\].+(€|EUR)/gi;
-    let USD = /\[REQ\].+(\$|USD)/gi;
+    let CAD = /.+(CAD)/gi;
+    let GBP = /.+(£|GBP)/gi;
+    let EUR = /.+(€|EUR)/gi;
+    let USD = /.+(\$|USD)/gi;
     // start matching them and seeing what sticks, be greedy with this
     var CADMatch = CAD.exec(title);
     if (CADMatch !== null){
@@ -161,7 +191,7 @@ function processPost(post){
     if (USDMatch !== null){
       return "USD";
     }
-    return null;
+    return "???";
   }
 
   function processPostFreshness(post){
@@ -192,13 +222,13 @@ function processPost(post){
       returnObj.raw.year = moment().year();
       returnObj.raw.month = nameMonthMatch[1];
       var ordinalMatch = ordinal.exec(title);
-      // if the ordinal doesn't match, set it to 31
+      // if the ordinal doesn't match, set it to the end of the month
       if (ordinalMatch === null){
-        returnObj.raw.day = 31;
+        returnObj.raw.day = moment(`${returnObj.raw.year} ${returnObj.raw.month}`, "YYYY MMM").endOf('month').format("DD");
       }else{
         returnObj.raw.day = ordinalMatch[1];
       }
-      returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY");
+      returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
     }
     // matching for slash dates
@@ -233,9 +263,9 @@ function processPost(post){
         returnObj.raw.month = slashDatesMatch[1];
         returnObj.raw.day = slashDatesMatch[2];
       }
-      returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY");
+      returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
     }
-    return null;
+    return {date: null};
   }
 }
