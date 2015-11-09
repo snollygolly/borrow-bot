@@ -136,8 +136,8 @@ function processPost(post){
   function processPostAmounts(title){
     var returnObj = {};
     // define all the patterns for currency matching
-    let oneAmount = /\[REQ\].?[\$|£|€](\d+[,|.]?\d+)/gi;
-    let twoAmount = /\[REQ\].?[\$|£|€](\d+[,|.]?\d+).+[\$|£|€](\d+[,|.]?\d+)/gi;
+    let oneAmount = /\[REQ\].+?[\$|£|€](\d+[,|.]?\d+)/gi;
+    let twoAmount = /\[REQ\].+?[\$|£|€](\d+[,|.]?\d+).+?[\$|£|€](\d+[,|.]?\d+)/gi;
     // start matching them and seeing what sticks, be greedy with this
     var twoAmountMatch = twoAmount.exec(title);
     if (twoAmountMatch !== null){
@@ -169,7 +169,7 @@ function processPost(post){
   function processPostCurrency(title){
     var returnObj = {};
     // define all the patterns for currency matching
-    let CAD = /.+(CAD)/gi;
+    let CAD = /.+(CAD|CDN)/gi;
     let GBP = /.+(£|GBP)/gi;
     let EUR = /.+(€|EUR)/gi;
     let USD = /.+(\$|USD)/gi;
