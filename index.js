@@ -136,7 +136,7 @@ function processPost(post){
     // create the object based on the type it is
     switch (returnObj.type){
       case "REQ":
-        let dates = processPostDates(post.title);
+        let dates = processPostDates(post);
         returnObj.raw.dates = dates;
         returnObj.repay_date = dates.date;
       case "PAID":
@@ -227,28 +227,28 @@ function processPost(post){
     return returnObj;
   }
 
-  function processPostDates(title){
+  function processPostDates(post){
     var returnObj = {};
     returnObj.raw = {};
 
     // matching for many days
-    var manyDaysMatch = MANY_DAYS.exec(title);
+    var manyDaysMatch = MANY_DAYS.exec(post.title);
     if (manyDaysMatch !== null){
       return doManyDays(post, manyDaysMatch, returnObj);
     }
     // matching for name month
-    var nameMonthMatch = NAME_MONTH.exec(title);
+    var nameMonthMatch = NAME_MONTH.exec(post.title);
     if (nameMonthMatch !== null){
       return doNameMonth(post, nameMonthMatch, returnObj);
     }
     // match for ordinal only (implied month)
-    var ordinalMatch = ORDINAL.exec(title);
+    var ordinalMatch = ORDINAL.exec(post.title);
     if (ordinalMatch !== null){
       // we matched for xxth day of the month, implied month
       return doImpliedMonth(post, ordinalMatch, returnObj);
     }
     // matching for slash dates
-    var slashDatesMatch = SLASH_DATES.exec(title);
+    var slashDatesMatch = SLASH_DATES.exec(post.title);
     if (slashDatesMatch !== null){
       return doSlashDates(post, slashDatesMatch, returnObj);
     }
