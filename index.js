@@ -96,7 +96,7 @@ function processPost(post){
   const EUR = /.+(€|EUR)/gi;
   const USD = /.+(\$|USD)/gi;
   // for matching date types
-  const ORDINAL = /(\d+)(st|nd|rd|th){1}/gi;
+  const ORDINAL = / ([0-3]?[0-9])(st|nd|rd|th| ){1}/gi;
   const NAME_MONTH = /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)/gi;
   const SLASH_DATES = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
   const MANY_DAYS = /(\d+) days/gi;
@@ -266,14 +266,18 @@ function processPost(post){
     function doNameMonth(post, match, returnObj){
       returnObj.raw.matchType = "Name Dates";
       // get the current year, although this probably won't work long term
-      returnObj.raw.year = moment().year();
-      returnObj.raw.month = match[1];
+      returnObj.raw.year = moment().format("YYYY");
+      returnObj.raw.month = match[0];
       var ordinalMatch = ORDINAL.exec(post.title);
       // if the ordinal doesn't match, set it to the end of the month
       if (ordinalMatch === null){
         returnObj.raw.day = moment(`${returnObj.raw.year} ${returnObj.raw.month}`, "YYYY MMM").endOf('month').format("DD");
       }else{
         returnObj.raw.day = ordinalMatch[1];
+        if (moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY").isAfter(moment.unix(post.created_utc)) !== true){
+          // the day/month combo is in the future, so leave the year alone
+          returnObj.raw.year = moment(moment.unix(post.created_utc)).add(1, "year").format("YYYY");
+        }
       }
       returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
