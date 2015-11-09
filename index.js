@@ -84,8 +84,8 @@ function processPost(post){
   // for filtering which type of post this is
   const REQ_POST = /\[REQ\].?/gi;
   const PAID_POST =/\[PAID\].?/gi;
-  const UNPAID_POST = /\[META\].?/gi;
-  const META_POST = /\[UNPAID\].?/gi;
+  const UNPAID_POST = /\[UNPAID\].?/gi;
+  const META_POST = /\[META\].?/gi;
   // for figuring out how they are presenting their amounts
   const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)/gi;
   const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+).+?[\$|£|€| ](\d+[,|.]?\d+)/gi;
