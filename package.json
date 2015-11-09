@@ -1,0 +1,24 @@
+{
+  "name": "borrow-bot",
+  "version": "1.0.0",
+  "description": "A bot for maximizing /r/borrow",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/snollygolly/borrow-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/snollygolly/borrow-bot/issues"
+  },
+  "homepage": "https://github.com/snollygolly/borrow-bot",
+  "dependencies": {
+    "co": "^4.6.0",
+    "moment": "^2.10.6",
+    "snoocore": "^3.2.0"
+  }
+}
