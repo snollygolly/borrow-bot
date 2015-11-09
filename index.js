@@ -34,16 +34,18 @@ const reddit = new Snoocore({
 });
 
 co(function *(){
-  // yield any promise
-  let loginResult = yield reddit('/api/v1/me').get();
-  console.log(`*  : ${loginResult.name} has logged in.`);
-  let listingResult = yield reddit('/r/borrow/new').listing();
+  // set up a connection for the database
   connection = yield mysql.createConnection({
       host: config.db.host,
       user: config.db.user,
       password: config.db.password,
       database: config.db.database
   });
+  // login to redit and get your information
+  let loginResult = yield reddit('/api/v1/me').get();
+  console.log(`*  : ${loginResult.name} has logged in.`);
+  //get a listing of all new posts on the front page
+  let listingResult = yield reddit('/r/borrow/new').listing();
   var posts = [];
   for (let post of listingResult.get.data.children){
     let newPost = processPost(post.data);
@@ -59,9 +61,12 @@ function onerror(err) {
   // co will not throw any errors you do not handle!!!
   // HANDLE ALL YOUR ERRORS!!!
   console.error(err.stack);
+  console.log("Dying...");
+  return process.exit();
 }
 
 function* storePost (post){
+  post.raw = JSON.stringify(post.raw, null, 2);
   let countResults = yield connection.query(`SELECT id FROM posts WHERE id = '${post.id}';`);
   if (!countResults[0]){
     //this post doesn't exist in the DB
@@ -75,16 +80,35 @@ function* storePost (post){
 }
 
 function processPost(post){
+  // patterns
+  // for filtering which type of post this is
+  const REQ_POST = /\[REQ\].?/gi;
+  const PAID_POST =/\[PAID\].?/gi;
+  const UNPAID_POST = /\[META\].?/gi;
+  const META_POST = /\[UNPAID\].?/gi;
+  // for figuring out how they are presenting their amounts
+  const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)/gi;
+  const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+).+?[\$|£|€| ](\d+[,|.]?\d+)/gi;
+  const PERC_INT = /(\d+)\%/gi;
+  // for matching specific currencies being used
+  const CAD = /.+(CAD|CDN)/gi;
+  const GBP = /.+(£|GBP)/gi;
+  const EUR = /.+(€|EUR)/gi;
+  const USD = /.+(\$|USD)/gi;
+  // for matching date types
+  const ORDINAL = /(\d+)(st|nd|rd|th){1}/gi;
+  const NAME_MONTH = /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)/gi;
+  const SLASH_DATES = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
+  const MANY_DAYS = /(\d+) days/gi;
+
   return processPostByType(post.title);
 
   // process post functions
   function processPostByType(title){
     var returnObj = {};
-    // set patterns for request type
-    let reqPost = /\[REQ\].?/gi;
-    let paidPost = /\[PAID\].?/gi;
-    let metaPost = /\[META\].?/gi;
-    let unpaidPost = /\[UNPAID\].?/gi;
+    // for debugging
+    returnObj.raw = {};
+
     // set some values for everyone
     returnObj.id = post.id;
     returnObj.poster = post.author;
@@ -93,53 +117,45 @@ function processPost(post){
     returnObj.created = moment.unix(post.created_utc).local().format("YYYY-MM-DD HH:mm:ss");
     returnObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
     returnObj.comments = post.num_comments;
-    if (reqPost.exec(post.title) !== null){
+
+    // figure out type of post by tag
+    if (REQ_POST.exec(post.title) !== null){
       returnObj.type = "REQ";
-      let amounts = processPostAmounts(post.title);
-      // process amounts for DB insertion
-      returnObj.borrow_amnt = amounts.borrowAmnt;
-      returnObj.repay_amnt = amounts.repayAmnt;
-      returnObj.interest = amounts.interest;
-      returnObj.currency = processPostCurrency(post.title);
-      //returnObj.freshness = processPostFreshness(post);
-      let dates = processPostDates(post.title);
-      returnObj.repay_date = dates.date;
-      return returnObj;
-    }
-    if (paidPost.exec(post.title) !== null){
+    }else if (PAID_POST.exec(post.title) !== null){
       returnObj.type = "PAID";
-      let amounts = processPostAmounts(post.title);
-      // process amounts for DB insertion
-      returnObj.borrow_amnt = amounts.borrowAmnt;
-      returnObj.repay_amnt = amounts.repayAmnt;
-      returnObj.interest = amounts.interest;
-      returnObj.currency = processPostCurrency(post.title);
-      return returnObj;
-    }
-    if (unpaidPost.exec(post.title) !== null){
+    }else if (UNPAID_POST.exec(post.title) !== null){
       returnObj.type = "UNPAID";
-      let amounts = processPostAmounts(post.title);
-      // process amounts for DB insertion
-      returnObj.borrow_amnt = amounts.borrowAmnt;
-      returnObj.repay_amnt = amounts.repayAmnt;
-      returnObj.interest = amounts.interest;
-      returnObj.currency = processPostCurrency(post.title);
-      return returnObj;
-    }
-    if (metaPost.exec(post.title) !== null){
+    }else if (META_POST.exec(post.title) !== null){
       returnObj.type = "META";
       return returnObj;
+    }else{
+      returnObj.type = "???";
+      return returnObj;
     }
-    return null;
+
+    // create the object based on the type it is
+    switch (returnObj.type){
+      case "REQ":
+        let dates = processPostDates(post.title);
+        returnObj.raw.dates = dates;
+        returnObj.repay_date = dates.date;
+      case "PAID":
+      case "UNPAID":
+        let amounts = processPostAmounts(post.title);
+        returnObj.raw.amounts = amounts;
+        returnObj.borrow_amnt = amounts.borrowAmnt;
+        returnObj.repay_amnt = amounts.repayAmnt;
+        returnObj.interest = amounts.interest;
+        returnObj.currency = processPostCurrency(post.title);
+        break;
+    }
+    return returnObj;
   }
 
   function processPostAmounts(title){
     var returnObj = {};
-    // define all the patterns for currency matching
-    let oneAmount = /\[REQ\].*?[\$|£|€](\d+[,|.]?\d+)/gi;
-    let twoAmount = /\[REQ\].*?[\$|£|€](\d+[,|.]?\d+).+?[\$|£|€](\d+[,|.]?\d+)/gi;
     // start matching them and seeing what sticks, be greedy with this
-    var twoAmountMatch = twoAmount.exec(title);
+    var twoAmountMatch = TWO_AMOUNT.exec(title);
     if (twoAmountMatch !== null){
       // there was a match, return out
       returnObj.borrowAmnt = twoAmountMatch[1].replace(/,/g, '');
@@ -147,12 +163,11 @@ function processPost(post){
       returnObj.interest = Math.round((returnObj.repayAmnt - returnObj.borrowAmnt) / returnObj.borrowAmnt * 1000) / 10;
       return returnObj;
     }
-    var oneAmountMatch = oneAmount.exec(title);
+    var oneAmountMatch = ONE_AMOUNT.exec(title);
     if (oneAmountMatch !== null){
       // there was a match, return out
       returnObj.borrowAmnt = oneAmountMatch[1].replace(/,/g, '');
-      let percInt = /(\d+)\%/gi;
-      var percIntMatch = percInt.exec(title);
+      var percIntMatch = PERC_INT.exec(title);
       if (percIntMatch !== null){
         // they are manually specifying an interest amount, we can work with this.
         returnObj.interest = percIntMatch[1];
@@ -168,11 +183,6 @@ function processPost(post){
 
   function processPostCurrency(title){
     var returnObj = {};
-    // define all the patterns for currency matching
-    let CAD = /.+(CAD|CDN)/gi;
-    let GBP = /.+(£|GBP)/gi;
-    let EUR = /.+(€|EUR)/gi;
-    let USD = /.+(\$|USD)/gi;
     // start matching them and seeing what sticks, be greedy with this
     var CADMatch = CAD.exec(title);
     if (CADMatch !== null){
@@ -209,19 +219,23 @@ function processPost(post){
   function processPostDates(title){
     var returnObj = {};
     returnObj.raw = {};
-    // handle month name and ordinal number matches
-    var ordinal = /(\d+)(st|nd|rd|th){1}/gi
-    let nameMonth = /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)/gi;
-    // handle date expression as xx/xx or xx/xx/xx or xx/xx/xxxx
-    let slashDates = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
+    // matching for many days
+    var manyDaysMatch = MANY_DAYS.exec(title);
+    if (manyDaysMatch !== null){
+      // we matched for xx days
+      returnObj.raw.matchType = "Many Days";
+      returnObj.raw.days = manyDaysMatch[1];
+      returnObj.date = moment.unix(post.created_utc).add(returnObj.raw.days, "days").local().format("YYYY-MM-DD");
+      return returnObj;
+    }
     // matching for date names
-    var nameMonthMatch = nameMonth.exec(title);
+    var nameMonthMatch = NAME_MONTH.exec(title);
     if (nameMonthMatch !== null){
       returnObj.raw.matchType = "Name Dates";
       // get the current year, although this probably won't work long term
       returnObj.raw.year = moment().year();
       returnObj.raw.month = nameMonthMatch[1];
-      var ordinalMatch = ordinal.exec(title);
+      var ordinalMatch = ORDINAL.exec(title);
       // if the ordinal doesn't match, set it to the end of the month
       if (ordinalMatch === null){
         returnObj.raw.day = moment(`${returnObj.raw.year} ${returnObj.raw.month}`, "YYYY MMM").endOf('month').format("DD");
@@ -231,8 +245,30 @@ function processPost(post){
       returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
     }
+    // match for ordinal only (implied month)
+    var ordinalMatch = ORDINAL.exec(title);
+    if (ordinalMatch !== null){
+      // we matched for xxth day of the month, implied month
+      returnObj.raw.matchType = "Implied Month";
+      returnObj.raw.day = ordinalMatch[1];
+      var createdDay = moment.unix(post.created_utc).format("DD");
+      if (createdDay > ordinalMatch[1]){
+        returnObj.raw.month = moment.unix(post.created_utc).add(1, "month").format("MM");
+        if (returnObj.raw.month === 1){
+          //they mean a day next year
+          returnObj.raw.year = moment().add(1, "year").format("YYYY");
+        }else{
+          returnObj.raw.year = moment().format("YYYY");
+        }
+      }else{
+        returnObj.raw.month = moment.unix(post.created_utc).format("MM");
+        returnObj.raw.year = moment().format("YYYY");
+      }
+      returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY").format("YYYY-MM-DD");
+      return returnObj;
+    }
     // matching for slash dates
-    var slashDatesMatch = slashDates.exec(title);
+    var slashDatesMatch = SLASH_DATES.exec(title);
     if (slashDatesMatch !== null){
       returnObj.raw.matchType = "Slash Dates";
       let thisYear = moment().format("YY");
