@@ -154,19 +154,31 @@ function processPost(post){
 
   function processPostAmounts(title){
     var returnObj = {};
-    // start matching them and seeing what sticks, be greedy with this
+
+    // match titles that have two amounts in the title
     var twoAmountMatch = TWO_AMOUNT.exec(title);
     if (twoAmountMatch !== null){
-      // there was a match, return out
-      returnObj.borrowAmnt = twoAmountMatch[1].replace(/,/g, '');
-      returnObj.repayAmnt = twoAmountMatch[2].replace(/,/g, '');
+      return doTwoAmount(title, twoAmountMatch, returnObj);
+    }
+
+    // match title that only have one amount in the title
+    var oneAmountMatch = ONE_AMOUNT.exec(title);
+    if (oneAmountMatch !== null){
+      return doOneAmount(title, oneAmountMatch, returnObj);
+    }
+
+    // give up if there's no matches
+    return {borrowAmnt: null, repayAmnt: null, interest: null};
+
+    function doTwoAmount (title, match, returnObj){
+      returnObj.borrowAmnt = match[1].replace(/,/g, '');
+      returnObj.repayAmnt = match[2].replace(/,/g, '');
       returnObj.interest = Math.round((returnObj.repayAmnt - returnObj.borrowAmnt) / returnObj.borrowAmnt * 1000) / 10;
       return returnObj;
     }
-    var oneAmountMatch = ONE_AMOUNT.exec(title);
-    if (oneAmountMatch !== null){
-      // there was a match, return out
-      returnObj.borrowAmnt = oneAmountMatch[1].replace(/,/g, '');
+
+    function doOneAmount (title, match, returnObj){
+      returnObj.borrowAmnt = match[1].replace(/,/g, '');
       var percIntMatch = PERC_INT.exec(title);
       if (percIntMatch !== null){
         // they are manually specifying an interest amount, we can work with this.
@@ -178,7 +190,6 @@ function processPost(post){
       }
       return returnObj;
     }
-    return {borrowAmnt: null, repayAmnt: null, interest: null};
   }
 
   function processPostCurrency(title){
@@ -219,23 +230,45 @@ function processPost(post){
   function processPostDates(title){
     var returnObj = {};
     returnObj.raw = {};
+
     // matching for many days
     var manyDaysMatch = MANY_DAYS.exec(title);
     if (manyDaysMatch !== null){
-      // we matched for xx days
+      return doManyDays(post, manyDaysMatch, returnObj);
+    }
+    // matching for name month
+    var nameMonthMatch = NAME_MONTH.exec(title);
+    if (nameMonthMatch !== null){
+      return doNameMonth(post, nameMonthMatch, returnObj);
+    }
+    // match for ordinal only (implied month)
+    var ordinalMatch = ORDINAL.exec(title);
+    if (ordinalMatch !== null){
+      // we matched for xxth day of the month, implied month
+      return doImpliedMonth(post, ordinalMatch, returnObj);
+    }
+    // matching for slash dates
+    var slashDatesMatch = SLASH_DATES.exec(title);
+    if (slashDatesMatch !== null){
+      return doSlashDates(post, slashDatesMatch, returnObj);
+    }
+
+    // if we didn't match anything, return a null and give up
+    return {date: null};
+
+    function doManyDays(post, match, returnObj){
       returnObj.raw.matchType = "Many Days";
-      returnObj.raw.days = manyDaysMatch[1];
+      returnObj.raw.days = match[1];
       returnObj.date = moment.unix(post.created_utc).add(returnObj.raw.days, "days").local().format("YYYY-MM-DD");
       return returnObj;
     }
-    // matching for date names
-    var nameMonthMatch = NAME_MONTH.exec(title);
-    if (nameMonthMatch !== null){
+
+    function doNameMonth(post, match, returnObj){
       returnObj.raw.matchType = "Name Dates";
       // get the current year, although this probably won't work long term
       returnObj.raw.year = moment().year();
-      returnObj.raw.month = nameMonthMatch[1];
-      var ordinalMatch = ORDINAL.exec(title);
+      returnObj.raw.month = match[1];
+      var ordinalMatch = ORDINAL.exec(post.title);
       // if the ordinal doesn't match, set it to the end of the month
       if (ordinalMatch === null){
         returnObj.raw.day = moment(`${returnObj.raw.year} ${returnObj.raw.month}`, "YYYY MMM").endOf('month').format("DD");
@@ -245,14 +278,12 @@ function processPost(post){
       returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
     }
-    // match for ordinal only (implied month)
-    var ordinalMatch = ORDINAL.exec(title);
-    if (ordinalMatch !== null){
-      // we matched for xxth day of the month, implied month
+
+    function doImpliedMonth(post, match, returnObj){
       returnObj.raw.matchType = "Implied Month";
-      returnObj.raw.day = ordinalMatch[1];
+      returnObj.raw.day = match[1];
       var createdDay = moment.unix(post.created_utc).format("DD");
-      if (createdDay > ordinalMatch[1]){
+      if (createdDay > match[1]){
         returnObj.raw.month = moment.unix(post.created_utc).add(1, "month").format("MM");
         if (returnObj.raw.month === 1){
           //they mean a day next year
@@ -267,41 +298,39 @@ function processPost(post){
       returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
     }
-    // matching for slash dates
-    var slashDatesMatch = SLASH_DATES.exec(title);
-    if (slashDatesMatch !== null){
+
+    function doSlashDates(post, match, returnObj){
       returnObj.raw.matchType = "Slash Dates";
       let thisYear = moment().format("YY");
       // we have a match for slash dates, now just figure out which is which
-      if (!slashDatesMatch[3]){
+      if (!match[3]){
         // no year provided (probably)
         returnObj.raw.year = moment().format("YYYY");
-      }else if (slashDatesMatch[3].length > 2){
+      }else if (match[3].length > 2){
         // this is probably a 4 digit year
-        returnObj.raw.year = slashDatesMatch[3];
-      }else if (slashDatesMatch[3] === thisYear){
+        returnObj.raw.year = match[3];
+      }else if (match[3] === thisYear){
         // this is a two digit year (probably)
         returnObj.raw.year = moment().format("YYYY");
-      }else if (slashDatesMatch[3] === (thisYear + 1)){
+      }else if (match[3] === (thisYear + 1)){
         // this is probably a two digit year for next year
-        returnObj.raw.year = moment(slashDatesMatch[3], "YY").format("YYYY");
+        returnObj.raw.year = moment(match[3], "YY").format("YYYY");
       }else{
         // we have no idea what this is?
         returnObj.raw.year = moment().format("YYYY");
       }
       // start with month/day matches
-      if (slashDatesMatch[1] > 12){
+      if (match[1] > 12){
         // this isn't a month, use DD/MM/YYYY
-        returnObj.raw.day = slashDatesMatch[1];
-        returnObj.raw.month = slashDatesMatch[2];
+        returnObj.raw.day = match[1];
+        returnObj.raw.month = match[2];
       }else{
         // this a month (maybe), use MM/DD/YYYY
-        returnObj.raw.month = slashDatesMatch[1];
-        returnObj.raw.day = slashDatesMatch[2];
+        returnObj.raw.month = match[1];
+        returnObj.raw.day = match[2];
       }
       returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
     }
-    return {date: null};
   }
 }
