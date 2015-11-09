@@ -7,6 +7,12 @@ const Snoocore = require('snoocore');
 const co = require('co');
 const moment = require('moment');
 
+// set up some constants
+// how many comments before a post is considered stale
+const COMMENTS_FRESH = 2;
+// how much time before a post is considered stale (in minutes)
+const TIME_FRESH = 60;
+
 // Our new instance associated with a single account.
 // It takes in various configuration options.
 const reddit = new Snoocore({
@@ -74,10 +80,11 @@ function processPost(post){
     if (reqPost.exec(post.title) !== null){
       returnObj.type = "REQ";
       returnObj.id = post.id;
+      returnObj.title = post.title;
       returnObj.amounts = processPostAmounts(post.title);
       returnObj.currency = processPostCurrency(post.title);
       returnObj.freshness = processPostFreshness(post);
-      //returnObj.dates = processPostDates(post);
+      returnObj.dates = processPostDates(post.title);
       return returnObj;
     }
     if (paidPost.exec(post.title) !== null){
@@ -132,39 +139,103 @@ function processPost(post){
   function processPostCurrency(title){
     var returnObj = {};
     // define all the patterns for currency matching
-    let USD = /\[REQ\].?[\$|USD]/gi;
-    let GBP = /\[REQ\].?[£|GBP]/gi;
-    let EUR = /\[REQ\].?[€|EUR]/gi;
+    let CAD = /\[REQ\].+(CAD)/gi;
+    let GBP = /\[REQ\].+(£|GBP)/gi;
+    let EUR = /\[REQ\].+(€|EUR)/gi;
+    let USD = /\[REQ\].+(\$|USD)/gi;
     // start matching them and seeing what sticks, be greedy with this
-    var USDMatch = USD.test(title);
-    if (USDMatch !== null){
-      return "USD";
+    var CADMatch = CAD.exec(title);
+    if (CADMatch !== null){
+      return "CAD";
     }
-    var GBPMatch = GBP.test(title);
+    var GBPMatch = GBP.exec(title);
     if (GBPMatch !== null){
       return "GBP";
     }
-    var EURMatch = EUR.test(title);
+    var EURMatch = EUR.exec(title);
     if (EURMatch !== null){
       return "EUR";
+    }
+    // USD match is the greediest of all of them, match it last
+    var USDMatch = USD.exec(title);
+    if (USDMatch !== null){
+      return "USD";
     }
     return null;
   }
 
   function processPostFreshness(post){
     var returnObj = {};
-    returnObj.comments = post.num_comments <= 2 ? "Fresh" : "Stale";
+    returnObj.comments = post.num_comments <= COMMENTS_FRESH ? "Fresh" : "Stale";
     returnObj.commentsAmnt = post.num_comments;
     let postTime = moment.unix(post.created_utc).local();
     let nowTime = moment().local();
-    returnObj.time = nowTime.diff(postTime, 'minutes');
+    returnObj.timeAmnt = nowTime.diff(postTime, 'minutes');
+    returnObj.time = returnObj.timeAmnt <= TIME_FRESH ? "Fresh" : "Stale";
     returnObj.timeFriendly = postTime.fromNow();
     return returnObj;
   }
 
-  function processPostDate(title){
+  function processPostDates(title){
     var returnObj = {};
-    let fullNameMonthEnd = /(January|February|March|April|May|June|July|August|September|October|November|December).+? (\d+)?/gi;
-    let partialNameMonthEnd = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec).+? (\d+)?/gi
+    returnObj.raw = {};
+    // handle month name and ordinal number matches
+    var ordinal = /(\d+)(st|nd|rd|th){1}/gi
+    let nameMonth = /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)/gi;
+    // handle date expression as xx/xx or xx/xx/xx or xx/xx/xxxx
+    let slashDates = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
+    // matching for date names
+    var nameMonthMatch = nameMonth.exec(title);
+    if (nameMonthMatch !== null){
+      returnObj.raw.matchType = "Name Dates";
+      // get the current year, although this probably won't work long term
+      returnObj.raw.year = moment().year();
+      returnObj.raw.month = nameMonthMatch[1];
+      var ordinalMatch = ordinal.exec(title);
+      // if the ordinal doesn't match, set it to 31
+      if (ordinalMatch === null){
+        returnObj.raw.day = 31;
+      }else{
+        returnObj.raw.day = ordinalMatch[1];
+      }
+      returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY");
+      return returnObj;
+    }
+    // matching for slash dates
+    var slashDatesMatch = slashDates.exec(title);
+    if (slashDatesMatch !== null){
+      returnObj.raw.matchType = "Slash Dates";
+      let thisYear = moment().format("YY");
+      // we have a match for slash dates, now just figure out which is which
+      if (!slashDatesMatch[3]){
+        // no year provided (probably)
+        returnObj.raw.year = moment().format("YYYY");
+      }else if (slashDatesMatch[3].length > 2){
+        // this is probably a 4 digit year
+        returnObj.raw.year = slashDatesMatch[3];
+      }else if (slashDatesMatch[3] === thisYear){
+        // this is a two digit year (probably)
+        returnObj.raw.year = moment().format("YYYY");
+      }else if (slashDatesMatch[3] === (thisYear + 1)){
+        // this is probably a two digit year for next year
+        returnObj.raw.year = moment(slashDatesMatch[3], "YY").format("YYYY");
+      }else{
+        // we have no idea what this is?
+        returnObj.raw.year = moment().format("YYYY");
+      }
+      // start with month/day matches
+      if (slashDatesMatch[1] > 12){
+        // this isn't a month, use DD/MM/YYYY
+        returnObj.raw.day = slashDatesMatch[1];
+        returnObj.raw.month = slashDatesMatch[2];
+      }else{
+        // this a month (maybe), use MM/DD/YYYY
+        returnObj.raw.month = slashDatesMatch[1];
+        returnObj.raw.day = slashDatesMatch[2];
+      }
+      returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY");
+      return returnObj;
+    }
+    return null;
   }
 }
