@@ -438,7 +438,9 @@ function generateScore(post, user){
       // how many total dollars have you repaid?
       totalCentsRepaid: 0,
       // how many dollars you've lent
-      totalCentsLent: 0
+      totalCentsLent: 0,
+      // how many of your loans as a borrower are unpaid
+      totalUnpaid: 0
     };
     // loop through all loan objects
     for (let loan of loans){
@@ -457,6 +459,9 @@ function generateScore(post, user){
         if (loan.principal_repayment_cents >= loan.principal_cents){
           // we repaid our lender
           loanObj.lendersRepaid++;
+        }
+        if (loan.unpaid === true){
+          loanObj.totalUnpaid++;
         }
       }else if (loan.lender_id === userID){
         // we were the lender
