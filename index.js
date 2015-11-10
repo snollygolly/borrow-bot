@@ -14,6 +14,8 @@ const rp = require('request-promise')
 const COMMENTS_FRESH = 2;
 // how much time before a post is considered stale (in minutes)
 const TIME_FRESH = 60;
+// how long to store a cached user (in days)
+const USER_CACHE = 5;
 
 var connection;
 
@@ -50,8 +52,10 @@ co(function *(){
   var posts = [];
   for (let post of listingResult.get.data.children){
     let newPost = processPost(post.data);
+    let user = yield getUser(newPost.poster);
+    let score = generateScore(newPost, user);
+    newPost.raw.score = score;
     yield storePost(newPost);
-    yield storeUser(newPost.poster)
     posts.push(newPost);
   }
   console.log("*  : Everything is finished. End?");
@@ -67,14 +71,14 @@ function onerror(err) {
   return process.exit();
 }
 
-function* storeUser (user){
+function* getUser (user){
   // first do a search for the user, since we can't get his ID from reddit.
   let userResults = yield connection.query(`SELECT * FROM users WHERE name = '${user}';`);
   if (userResults[0]){
     // username found, check the cache and if it's fresh, return from cache
     let todayMoment = moment().format("YYYY-MM-DD HH:mm:ss");
     let foundMoment = moment(new Date(userResults[0].found)).format("YYYY-MM-DD HH:mm:ss");
-    let foundFutureMoment = moment(new Date(userResults[0].found)).add(7, "days").format("YYYY-MM-DD HH:mm:ss");
+    let foundFutureMoment = moment(new Date(userResults[0].found)).add(USER_CACHE, "days").format("YYYY-MM-DD HH:mm:ss");
     if (moment(todayMoment).isAfter(foundFutureMoment) === true){
       //this cache is stale, so do nothing
       console.log(`*  : Cache for ${user} is stale`);
@@ -95,8 +99,13 @@ function* storeUser (user){
   };
   let userPage = yield rp(options);
   if (userPage[0].errors){
-    // something went wrong, this user doesn't exist
-    return null;
+    // something went wrong, this user doesn't exist, create a mock
+    let userObj = {};
+    userObj.id = 0;
+    userObj.name = user;
+    userObj.loans = JSON.stringify([], null, 2);
+    userObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
+    return userObj;
   }
   var userObj = {};
   userObj.id = userPage[0].id;
@@ -395,5 +404,84 @@ function processPost(post){
       returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY").format("YYYY-MM-DD");
       return returnObj;
     }
+  }
+}
+
+function generateScore(post, user){
+  let scoreObj = {};
+  scoreObj.raw = {};
+
+  let loanObj = parseLoans(JSON.parse(user.loans), user.id);
+  scoreObj.loan = loanObj;
+  return scoreObj;
+
+  function parseLoans(loans, userID){
+    var loanObj = {
+      // how many total loans on file
+      totalLoans: 0,
+      // how many loans where you've been the lender
+      totalLoaned: 0,
+      // how many loans where you've been the borrower
+      totalBorrowed: 0,
+      // how many individual people have been your lender (no dupes)
+      totalLenders: 0,
+      // who are these people?
+      lenders: [],
+      // how many individual people you've lent to
+      totalBorrowers: 0,
+      // who are these people?
+      borrowers: [],
+      // how many of these total lenders did you repay?
+      lendersRepaid: 0,
+      // how many total dollars have you borrowed?
+      totalCentsBorrowed: 0,
+      // how many total dollars have you repaid?
+      totalCentsRepaid: 0,
+      // how many dollars you've lent
+      totalCentsLent: 0
+    };
+    // loop through all loan objects
+    for (let loan of loans){
+      loanObj.totalLoans++;
+      // if we were a borrower for this loan
+      if (loan.borrower_id === userID){
+        // we were the borrower
+        loanObj.totalBorrowed++;
+        // track who the lender was
+        if (loanObj.lenders.indexOf(loan.lender_id) === -1){
+          // only push if this person isn't in the array
+          loanObj.lenders.push(loan.lender_id);
+        }
+        loanObj.totalCentsBorrowed += loan.principal_cents;
+        loanObj.totalCentsRepaid += loan.principal_repayment_cents;
+        if (loan.principal_repayment_cents >= loan.principal_cents){
+          // we repaid our lender
+          loanObj.lendersRepaid++;
+        }
+      }else if (loan.lender_id === userID){
+        // we were the lender
+        loanObj.totalLoaned++;
+        // track who we lent to
+        if (loanObj.borrowers.indexOf(loan.borrower_id) === -1){
+          // only push if this person isn't in the array
+          loanObj.borrowers.push(loan.borrower_id);
+        }
+        loanObj.totalCentsLent += loan.principal_cents;
+      }
+    }
+    loanObj.totalLenders = loanObj.lenders.length;
+    loanObj.totalBorrowers = loanObj.borrowers.length;
+    if (userID === 0){
+      //this is a mock user
+      loanObj.isRegistered = false;
+    }else{
+      loanObj.isRegistered = true;
+    }
+    return loanObj;
+  }
+
+  function getPaymentMethod(post){
+    var returnObj = {};
+    return returnObj;
   }
 }
