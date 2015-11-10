@@ -7,6 +7,7 @@ const Snoocore = require('snoocore');
 const co = require('co');
 const mysql = require('promise-mysql');
 const moment = require('moment');
+const rp = require('request-promise')
 
 // set up some constants
 // how many comments before a post is considered stale
@@ -50,6 +51,7 @@ co(function *(){
   for (let post of listingResult.get.data.children){
     let newPost = processPost(post.data);
     yield storePost(newPost);
+    yield storeUser(newPost.poster)
     posts.push(newPost);
   }
   console.log("*  : Everything is finished. End?");
@@ -65,16 +67,57 @@ function onerror(err) {
   return process.exit();
 }
 
+function* storeUser (user){
+  // first do a search for the user, since we can't get his ID from reddit.
+  let userResults = yield connection.query(`SELECT * FROM users WHERE name = '${user}';`);
+  if (userResults[0]){
+    // username found, check the cache and if it's fresh, return from cache
+    let todayMoment = moment().format("YYYY-MM-DD HH:mm:ss");
+    let foundMoment = moment(new Date(userResults[0].found)).format("YYYY-MM-DD HH:mm:ss");
+    let foundFutureMoment = moment(new Date(userResults[0].found)).add(7, "days").format("YYYY-MM-DD HH:mm:ss");
+    if (moment(todayMoment).isAfter(foundFutureMoment) === true){
+      //this cache is stale, so do nothing
+      console.log(`*  : Cache for ${user} is stale`);
+      yield connection.query(`DELETE FROM users WHERE name = '${user}';`);
+    }else{
+      console.log(`*  : Cache for ${user} is fresh`);
+      return userResults[0];
+    }
+  }
+  let options = {
+    method: "POST",
+    uri: "https://redditloans.com/api/users/show.json",
+    body: {
+      usernames: user
+    },
+    rejectUnauthorized: false,
+    json: true
+  };
+  let userPage = yield rp(options);
+  if (userPage[0].errors){
+    // something went wrong, this user doesn't exist
+    return null;
+  }
+  var userObj = {};
+  userObj.id = userPage[0].id;
+  userObj.name = userPage[0].usernames[0].username;
+  userObj.loans = JSON.stringify(userPage[0].loans, null, 2);
+  userObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
+  console.log(`*  : Storing user ${userObj.name} into DB`)
+  yield connection.query('INSERT INTO users SET ?', userObj);
+  return userObj;
+}
+
 function* storePost (post){
   post.raw = JSON.stringify(post.raw, null, 2);
   let countResults = yield connection.query(`SELECT id FROM posts WHERE id = '${post.id}';`);
   if (!countResults[0]){
     //this post doesn't exist in the DB
-    console.log(`*  : Storing ${post.id} into DB`)
+    console.log(`*  : Storing post ${post.id} into DB`)
     return yield connection.query('INSERT INTO posts SET ?', post);
   }else{
     //this post already exists in the DB
-    console.log(`*  : ${post.id} already exists in DB`)
+    console.log(`*  : Post ${post.id} already exists in DB`)
     return yield {};
   }
 }
@@ -87,8 +130,8 @@ function processPost(post){
   const UNPAID_POST = /\[UNPAID\].?/gi;
   const META_POST = /\[META\].?/gi;
   // for figuring out how they are presenting their amounts
-  const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)/gi;
-  const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+).+?[\$|£|€| ](\d+[,|.]?\d+)/gi;
+  const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th)/gi;
+  const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th).+?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th)/gi;
   const PERC_INT = /(\d+)\%/gi;
   // for matching specific currencies being used
   const CAD = /.+(CAD|CDN)/gi;
@@ -96,7 +139,7 @@ function processPost(post){
   const EUR = /.+(€|EUR)/gi;
   const USD = /.+(\$|USD)/gi;
   // for matching date types
-  const ORDINAL = / ([0-3]?[0-9])(st|nd|rd|th| ){1}/gi;
+  const ORDINAL = / ([0-3]?[0-9])(st|nd|rd|th| |,){1}/gi;
   const NAME_MONTH = /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)/gi;
   const SLASH_DATES = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
   const MANY_DAYS = /(\d+) days/gi;
@@ -141,11 +184,21 @@ function processPost(post){
         returnObj.repay_date = dates.date;
       case "PAID":
       case "UNPAID":
-        let amounts = processPostAmounts(post.title);
-        returnObj.raw.amounts = amounts;
-        returnObj.borrow_amnt = amounts.borrowAmnt;
-        returnObj.repay_amnt = amounts.repayAmnt;
-        returnObj.interest = amounts.interest;
+        var amounts = processPostAmounts(post.title);
+        returnObj.raw.titleAmounts = amounts;
+        if (!amounts.interest){
+          // if the title doesn't have enough, maybe the body will...
+          amounts = processPostAmounts(post.selftext);
+          returnObj.raw.bodyAmounts = amounts;
+          // u e the initial borrow amount if it's not null, otherwise try for the body amount
+          returnObj.borrow_amnt = returnObj.raw.titleAmounts.borrowAmnt === null ? amounts.borrowAmnt : returnObj.raw.titleAmounts.borrowAmnt;
+          returnObj.repay_amnt = amounts.repayAmnt;
+          returnObj.interest = amounts.interest;
+        }else{
+          returnObj.borrow_amnt = amounts.borrowAmnt;
+          returnObj.repay_amnt = amounts.repayAmnt;
+          returnObj.interest = amounts.interest;
+        }
         returnObj.currency = processPostCurrency(post.title);
         break;
     }
@@ -171,8 +224,14 @@ function processPost(post){
     return {borrowAmnt: null, repayAmnt: null, interest: null};
 
     function doTwoAmount (title, match, returnObj){
-      returnObj.borrowAmnt = match[1].replace(/,/g, '');
-      returnObj.repayAmnt = match[2].replace(/,/g, '');
+      returnObj.borrowAmnt = Number(match[1].replace(/,/g, ''));
+      returnObj.repayAmnt = Number(match[2].replace(/,/g, ''));
+      if (returnObj.repayAmnt < returnObj.borrowAmnt){
+        // this is happening because they phrased their post oddly, they are other offering interest as a standalone value, or offering phased payments.  Let's hope it's the first one.
+        returnObj.action = `Repay less than borrow, adding (${returnObj.repayAmnt})`;
+        returnObj.repayAmnt += returnObj.borrowAmnt;
+      }
+      // TODO: add support for phased payments
       returnObj.interest = Math.round((returnObj.repayAmnt - returnObj.borrowAmnt) / returnObj.borrowAmnt * 1000) / 10;
       return returnObj;
     }
