@@ -88,6 +88,13 @@ function* getUser (user){
       return userResults[0];
     }
   }
+  //set up user object for returning
+  var userObj = {};
+  let userResult = yield reddit('/user/' + user + '/about').get();
+  userObj.reddit_id = userResult.data.id;
+  userObj.karma = userResult.data.link_karma + userResult.data.comment_karma;
+  userObj.age = moment().diff(moment.unix(userResult.data.created).local(), "days");
+  // get information from reddit loans
   let options = {
     method: "POST",
     uri: "https://redditloans.com/api/users/show.json",
@@ -107,7 +114,7 @@ function* getUser (user){
     userObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
     return userObj;
   }
-  var userObj = {};
+
   userObj.id = userPage[0].id;
   userObj.name = userPage[0].usernames[0].username;
   userObj.loans = JSON.stringify(userPage[0].loans, null, 2);
@@ -413,6 +420,8 @@ function generateScore(post, user){
 
   let loanObj = parseLoans(JSON.parse(user.loans), user.id);
   scoreObj.loan = loanObj;
+  let paymentObj = getPaymentMethod(post);
+  scoreObj.payment = paymentObj;
   return scoreObj;
 
   function parseLoans(loans, userID){
@@ -486,7 +495,30 @@ function generateScore(post, user){
   }
 
   function getPaymentMethod(post){
+    const PAYPAL_ACCEPTED = /(paypal|pay pal)/gi;
+    const OTHER_ACCEPTED = /(moneygram|money gram|quickpay|interac|e-transfer|e transfer|western union|money pak|moneypak)/gi;
+
     var returnObj = {};
+    returnObj.title = checkPayment(post.title);
+    returnObj.body = checkPayment(post.body);
     return returnObj;
+
+    function checkPayment(text){
+      var payObj = {
+        paypal: false,
+        other: false
+      };
+      let paypalAcceptedMatch = PAYPAL_ACCEPTED.exec(text);
+      let otherAcceptedMatch = OTHER_ACCEPTED.exec(text);
+      if (paypalAcceptedMatch !== null){
+        //they accept paypal, probably
+        payObj.paypal = true;
+      }
+      if (otherAcceptedMatch !== null){
+        //they accept something else
+        payObj.other = true;
+      }
+      return payObj;
+    }
   }
 }
