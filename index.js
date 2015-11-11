@@ -147,8 +147,8 @@ function processPost(post){
   const UNPAID_POST = /\[UNPAID\].?/gi;
   const META_POST = /\[META\].?/gi;
   // for figuring out how they are presenting their amounts
-  const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%)/gi;
-  const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%).+?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%)/gi;
+  const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%|\/)/gi;
+  const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%|\/).+?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%|\/)/gi;
   const PERC_INT = /(\d+)\%/gi;
   // for matching specific currencies being used
   const CAD = /.+(CAD|CDN)/gi;
