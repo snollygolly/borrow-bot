@@ -4,10 +4,12 @@
 const config = require('./config');
 // bring in packages
 const Snoocore = require('snoocore');
+const Promise = require('bluebird');
 const co = require('co');
 const mysql = require('promise-mysql');
 const moment = require('moment');
 const rp = require('request-promise')
+const client = Promise.promisifyAll(require('twilio')(config.twilio.accountSid, config.twilio.authToken));
 
 // set up some constants
 // how many comments before a post is considered stale
@@ -16,6 +18,14 @@ const COMMENTS_FRESH = 2;
 const TIME_FRESH = 60;
 // how long to store a cached user (in days)
 const USER_CACHE = 5;
+// decide at which grade(s) to alert on
+const WORTHY_GRADES = ["AAA", "AA"];
+// decide how you'd like to be alerted
+const ALERT_TYPE = "sms";
+// who this alert goes to
+const ALERT_RCPT = config.me.number;
+
+console.log(`***: Starting the script at ${moment()}`);
 
 var connection;
 
@@ -46,10 +56,9 @@ co(function *(){
   });
   // login to redit and get your information
   let loginResult = yield reddit('/api/v1/me').get();
-  console.log(`*  : ${loginResult.name} has logged in.`);
+  console.log(`** : ${loginResult.name} has logged in.`);
   //get a listing of all new posts on the front page
   let listingResult = yield reddit('/r/borrow/new').listing();
-  var posts = [];
   for (let post of listingResult.get.data.children){
     let newPost = processPost(post.data);
     let user = yield getUser(newPost.poster);
@@ -58,11 +67,16 @@ co(function *(){
       let score = generateScore(newPost, user);
       newPost.raw.score = score;
       newPost.score = score.score;
+      newPost.grade = score.grade;
     }
-    yield storePost(newPost);
-    posts.push(newPost);
+    let storeResult = yield storePost(newPost)
+    if (storeResult.affectedRows >= 1){
+      // we stored the post and it was new!
+      // do some alerting
+      yield handleAlerts(newPost);
+    }
   }
-  console.log("*  : Everything is finished. End?");
+  console.log("** : Everything is finished. End?");
   return process.exit();
 }).catch(onerror);
 
@@ -71,8 +85,45 @@ function onerror(err) {
   // co will not throw any errors you do not handle!!!
   // HANDLE ALL YOUR ERRORS!!!
   console.error(err.stack);
-  console.log("Dying...");
+  console.log("***: Dying...");
   return process.exit();
+}
+
+function* handleAlerts (post){
+  if (!post.grade){return;}
+  let i = 0;
+  while (i < WORTHY_GRADES.length){
+    if (post.grade.indexOf(WORTHY_GRADES[i]) !== -1){
+      // this post has that grade, alert!
+      console.log("** : Sending Alert!");
+      yield sendAlert(post);
+    }
+    i++;
+  }
+}
+
+function* sendAlert (post){
+  if (!post.repay_date){
+    post.days = "?";
+  }else{
+    post.days = moment(post.repay_date, "YYYY-MM-DD").diff(moment(), "days");
+  }
+  if (!post.interest){
+    post.interest = "?";
+  }
+  var bodyMessage = `New loan found: Grade: ${post.grade}, Borrowing: ${post.borrow_amnt}${post.currency}@${post.interest}% for ${post.days} days. Link: reddit.com/r/borrow/${post.id}`;
+  try {
+    var message = yield client.messages.create({
+      to: config.me.number,
+    	from: config.twilio.fromNumber,
+      body: bodyMessage
+    });
+  }catch (err){
+    console.log("***: Twilio threw an error");
+    console.error(err);
+    throw err
+  }
+  console.log("** : Alerted successfully: " + message.sid);
 }
 
 function* getUser (user){
@@ -85,7 +136,7 @@ function* getUser (user){
     let foundFutureMoment = moment(new Date(userResults[0].found)).add(USER_CACHE, "days").format("YYYY-MM-DD HH:mm:ss");
     if (moment(todayMoment).isAfter(foundFutureMoment) === true){
       //this cache is stale, so do nothing
-      console.log(`*  : Cache for ${user} is stale`);
+      console.log(`** : Cache for ${user} is stale`);
       yield connection.query(`DELETE FROM users WHERE name = '${user}';`);
     }else{
       console.log(`*  : Cache for ${user} is fresh`);
@@ -120,7 +171,7 @@ function* getUser (user){
     userObj.loans = JSON.stringify(userPage[0].loans, null, 2);
   }
   userObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
-  console.log(`*  : Storing user ${userObj.name} into DB`)
+  console.log(`** : Storing user ${userObj.name} into DB`)
   yield connection.query('INSERT INTO users SET ?', userObj);
   return userObj;
 }
@@ -130,12 +181,12 @@ function* storePost (post){
   let countResults = yield connection.query(`SELECT id FROM posts WHERE id = '${post.id}';`);
   if (!countResults[0]){
     //this post doesn't exist in the DB
-    console.log(`*  : Storing post ${post.id} into DB`)
+    console.log(`** : Storing post ${post.id} into DB`)
     return yield connection.query('INSERT INTO posts SET ?', post);
   }else{
     //this post already exists in the DB
     console.log(`*  : Post ${post.id} already exists in DB`)
-    return yield {};
+    return yield {affected_rows: 0};
   }
 }
 
@@ -427,20 +478,29 @@ function generateScore(post, user){
   const AMNT_3 = 500;
   const AMNT_4 = 1000;
   const AMNT_5 = 5000;
-  const PER_LENDER_REPAID = 7;
+  // grading for loan quality (D = D-F)
+  const F = 0;
+  const D = 15;
+  const C = 30;
+  const B = 55;
+  const A = 110;
+  const AA = 175;
+  const AAA = 250;
+  // for variables
+  const PER_LENDER_REPAID = 6;
   const PER_DOLLAR_REPAID = .1;
   const PER_LOAN_BORROWED = 3;
   const PER_LOAN_LENT = 5;
   const PER_DOLLAR_LENT = .05;
   const PAYPAL_PAYMENT = 3;
-  const OTHER_PAYMENT = -3;
+  const OTHER_PAYMENT = -6;
   // ($$$ - LOAN) / OFFSET = POINTS
   const DOLLAR_OFFSET = 120;
   // (OFFSET - DAYS) / 7
   const PERIOD_OFFSET = 35;
   const PER_KARMA = .001;
   const PER_DAY = .005;
-  const PER_UNPAID = -14;
+  const PER_UNPAID = -30;
 
   let scoreObj = {};
   scoreObj.raw = {};
@@ -512,6 +572,26 @@ function generateScore(post, user){
 
   // finally do some rounding
   scoreObj.score = Math.round(scoreObj.score * 100) / 100;
+
+  // assign a grade
+  if (scoreObj.score < F){
+    scoreObj.grade = "F";
+  }else if (scoreObj.score > F && scoreObj.score < D){
+    scoreObj.grade = "D";
+  }else if (scoreObj.score > D && scoreObj.score < C){
+    scoreObj.grade = "C";
+  }else if (scoreObj.score > C && scoreObj.score < B){
+    scoreObj.grade = "B";
+  }else if (scoreObj.score > B && scoreObj.score < A){
+    scoreObj.grade = "A";
+  }else if (scoreObj.score > A && scoreObj.score < AA){
+    scoreObj.grade = "AA";
+  }else if (scoreObj.score > AA && scoreObj.score < AAA){
+    scoreObj.grade = "AAA";
+  }else{
+    scoreObj.grade = "???";
+  }
+
   return scoreObj;
 
   function parseLoans(loans, userID){

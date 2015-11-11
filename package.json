@@ -17,10 +17,12 @@
   },
   "homepage": "https://github.com/snollygolly/borrow-bot",
   "dependencies": {
+    "bluebird": "^3.0.5",
     "co": "^4.6.0",
     "moment": "^2.10.6",
     "promise-mysql": "^1.1.1",
     "request-promise": "^1.0.2",
-    "snoocore": "^3.2.0"
+    "snoocore": "^3.2.0",
+    "twilio": "^2.5.2"
   }
 }
