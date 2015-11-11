@@ -53,8 +53,12 @@ co(function *(){
   for (let post of listingResult.get.data.children){
     let newPost = processPost(post.data);
     let user = yield getUser(newPost.poster);
-    let score = generateScore(newPost, user);
-    newPost.raw.score = score;
+    if (newPost.type == "REQ"){
+      // generate a score for all requested loans
+      let score = generateScore(newPost, user);
+      newPost.raw.score = score;
+      newPost.score = score.score;
+    }
     yield storePost(newPost);
     posts.push(newPost);
   }
@@ -107,17 +111,14 @@ function* getUser (user){
   let userPage = yield rp(options);
   if (userPage[0].errors){
     // something went wrong, this user doesn't exist, create a mock
-    let userObj = {};
     userObj.id = 0;
     userObj.name = user;
     userObj.loans = JSON.stringify([], null, 2);
-    userObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
-    return userObj;
+  }else{
+    userObj.id = userPage[0].id;
+    userObj.name = userPage[0].usernames[0].username;
+    userObj.loans = JSON.stringify(userPage[0].loans, null, 2);
   }
-
-  userObj.id = userPage[0].id;
-  userObj.name = userPage[0].usernames[0].username;
-  userObj.loans = JSON.stringify(userPage[0].loans, null, 2);
   userObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
   console.log(`*  : Storing user ${userObj.name} into DB`)
   yield connection.query('INSERT INTO users SET ?', userObj);
@@ -146,8 +147,8 @@ function processPost(post){
   const UNPAID_POST = /\[UNPAID\].?/gi;
   const META_POST = /\[META\].?/gi;
   // for figuring out how they are presenting their amounts
-  const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th)/gi;
-  const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th).+?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th)/gi;
+  const ONE_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%)/gi;
+  const TWO_AMOUNT = /.*?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%).+?[\$|£|€| ](\d+[,|.]?\d+)(?!st|nd|rd|th|\%)/gi;
   const PERC_INT = /(\d+)\%/gi;
   // for matching specific currencies being used
   const CAD = /.+(CAD|CDN)/gi;
@@ -156,7 +157,7 @@ function processPost(post){
   const USD = /.+(\$|USD)/gi;
   // for matching date types
   const ORDINAL = / ([0-3]?[0-9])(st|nd|rd|th| |,){1}/gi;
-  const NAME_MONTH = /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)/gi;
+  const NAME_MONTH = / (?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?) /gi;
   const SLASH_DATES = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
   const MANY_DAYS = /(\d+) days/gi;
 
@@ -206,10 +207,15 @@ function processPost(post){
           // if the title doesn't have enough, maybe the body will...
           amounts = processPostAmounts(post.selftext);
           returnObj.raw.bodyAmounts = amounts;
-          // u e the initial borrow amount if it's not null, otherwise try for the body amount
+          // use the initial borrow amount if it's not null, otherwise try for the body amount
           returnObj.borrow_amnt = returnObj.raw.titleAmounts.borrowAmnt === null ? amounts.borrowAmnt : returnObj.raw.titleAmounts.borrowAmnt;
           returnObj.repay_amnt = amounts.repayAmnt;
-          returnObj.interest = amounts.interest;
+          // I think we need to recalculate interest when we do replacement on just the repay amount, but i'm not entirely sure, let's see if this breaks it.
+          if (returnObj.repay_amnt !== null && returnObj.borrow_amnt !== null){
+            returnObj.interest = Math.round((returnObj.repay_amnt - returnObj.borrow_amnt) / returnObj.borrow_amnt * 1000) / 10;
+          }else{
+            returnObj.interest = amounts.interest;
+          }
         }else{
           returnObj.borrow_amnt = amounts.borrowAmnt;
           returnObj.repay_amnt = amounts.repayAmnt;
@@ -415,13 +421,97 @@ function processPost(post){
 }
 
 function generateScore(post, user){
+  // set some constants for scoring
+  const AMNT_1 = 10;
+  const AMNT_2 = 100;
+  const AMNT_3 = 500;
+  const AMNT_4 = 1000;
+  const AMNT_5 = 5000;
+  const PER_LENDER_REPAID = 7;
+  const PER_DOLLAR_REPAID = .1;
+  const PER_LOAN_BORROWED = 3;
+  const PER_LOAN_LENT = 5;
+  const PER_DOLLAR_LENT = .05;
+  const PAYPAL_PAYMENT = 3;
+  const OTHER_PAYMENT = -3;
+  // ($$$ - LOAN) / OFFSET = POINTS
+  const DOLLAR_OFFSET = 120;
+  // (OFFSET - DAYS) / 7
+  const PERIOD_OFFSET = 35;
+  const PER_KARMA = .001;
+  const PER_DAY = .005;
+  const PER_UNPAID = -14;
+
   let scoreObj = {};
   scoreObj.raw = {};
 
   let loanObj = parseLoans(JSON.parse(user.loans), user.id);
-  scoreObj.loan = loanObj;
+  scoreObj.raw.loan = loanObj;
   let paymentObj = getPaymentMethod(post);
-  scoreObj.payment = paymentObj;
+  scoreObj.raw.payment = paymentObj;
+  // go through all the variables and start to calculate the score
+  scoreObj.raw.score = {};
+  scoreObj.score = 0;
+  scoreObj.raw.score.start = scoreObj.score;
+  // per lender repaid
+  let perLenderRepaid = loanObj.lendersRepaid * PER_LENDER_REPAID;
+  scoreObj.score += perLenderRepaid;
+  scoreObj.raw.score.perLenderRepaid = perLenderRepaid;
+  // per dollar repaid
+  let perDollarRepaid = (loanObj.totalCentsRepaid / 100) * PER_DOLLAR_REPAID;
+  scoreObj.score += perDollarRepaid;
+  scoreObj.raw.score.perDollarRepaid = perDollarRepaid;
+  // per loan borrowed
+  let perLoanBorrowed = loanObj.totalBorrowed * PER_LOAN_BORROWED;
+  scoreObj.score += perLoanBorrowed;
+  scoreObj.raw.score.perLoanBorrowed = perLoanBorrowed;
+  // per loan lent
+  let perLoanLent = loanObj.totalLoaned * PER_LOAN_LENT;
+  scoreObj.score += perLoanLent;
+  scoreObj.raw.score.perLoanLent = perLoanLent;
+  // per dollar lent
+  let perDollarLent = (loanObj.totalCentsLent / 100) * PER_DOLLAR_LENT;
+  scoreObj.score += perDollarLent;
+  scoreObj.raw.score.perDollarLent = perDollarLent;
+  // paypal payment
+  if (paymentObj.title.paypal === true || paymentObj.body.paypal === true){
+    let paypalPayment = PAYPAL_PAYMENT;
+    scoreObj.score += paypalPayment;
+    scoreObj.raw.score.paypalPayment = paypalPayment;
+  }
+  // other payment
+  if (paymentObj.title.other === true || paymentObj.body.other === true){
+    let otherPayment = OTHER_PAYMENT;
+    scoreObj.score += otherPayment;
+    scoreObj.raw.score.otherPayment = otherPayment;
+  }
+  // dollar offset
+  let dollarOffset = (AMNT_3 - post.borrow_amnt) / DOLLAR_OFFSET;
+  scoreObj.score += dollarOffset;
+  scoreObj.raw.score.dollarOffset = dollarOffset;
+  // period offset
+  if (post.repay_date){
+    // if we even have a repayment date...
+    let loanLength = moment(post.repay_date, "YYYY-MM-DD").diff(moment(), "days");
+    let periodOffset = (PERIOD_OFFSET - loanLength) / 7;
+    scoreObj.score += periodOffset;
+    scoreObj.raw.score.periodOffset = periodOffset;
+  }
+  // per karma
+  let perKarma = user.karma * PER_KARMA;
+  scoreObj.score += perKarma;
+  scoreObj.raw.score.perKarma = perKarma;
+  // per day
+  let perDay = user.age * PER_DAY;
+  scoreObj.score += perDay;
+  scoreObj.raw.score.perDay = perDay;
+  // per unpaid
+  let perUnpaid = loanObj.totalUnpaid * PER_UNPAID;
+  scoreObj.score += perUnpaid;
+  scoreObj.raw.score.perUnpaid = perUnpaid;
+
+  // finally do some rounding
+  scoreObj.score = Math.round(scoreObj.score * 100) / 100;
   return scoreObj;
 
   function parseLoans(loans, userID){
