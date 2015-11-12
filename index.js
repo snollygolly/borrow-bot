@@ -32,7 +32,7 @@ var connection;
 // Our new instance associated with a single account.
 // It takes in various configuration options.
 const reddit = new Snoocore({
-  userAgent: '/u/snollygolly borrow-bot@0.0.1', // unique string identifying the app
+  userAgent: '/u/snollygolly borrow-bot@0.1', // unique string identifying the app
   oauth: {
     type: 'script',
     key: config.auth.key, // OAuth client key (provided at reddit app)
@@ -189,6 +189,11 @@ function* storePost (post){
     console.log(`*  : Post ${post.id} already exists in DB`)
     return yield {affected_rows: 0};
   }
+}
+
+function* deletePost (post){
+  post.raw = JSON.stringify(post.raw, null, 2);
+  return yield connection.query(`DELETE FROM posts WHERE id = '${post.id}';`);
 }
 
 function processPost(post){
@@ -667,7 +672,7 @@ function generateScore(post, user){
 
   function getPaymentMethod(post){
     const PAYPAL_ACCEPTED = /(paypal|pay pal)/gi;
-    const OTHER_ACCEPTED = /(moneygram|money gram|quickpay|interac|e-transfer|e transfer|western union|money pak|moneypak)/gi;
+    const OTHER_ACCEPTED = /(moneygram|money gram|quickpay|interac|e-transfer|e transfer|western union|money pak|moneypak|direct deposit)/gi;
 
     var returnObj = {};
     returnObj.title = checkPayment(post.title);
