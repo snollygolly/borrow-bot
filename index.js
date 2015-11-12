@@ -97,6 +97,7 @@ function* handleAlerts (post){
       // this post has that grade, alert!
       console.log("** : Sending Alert!");
       yield sendAlert(post);
+      break;
     }
     i++;
   }
