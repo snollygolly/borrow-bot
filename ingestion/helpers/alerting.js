@@ -3,8 +3,14 @@
 const config = require('./common').config;
 const Promise = require('./common').Promise;
 const moment = require('./common').moment;
-const client = Promise.promisifyAll(require('twilio')(config.twilio.accountSid, config.twilio.authToken));
-
+if (config.twilio.enabled === true){
+  console.log("*  : Loading: Twilio [Enabled]");
+  var twilioConfig = {accountSid: config.twilio.accountSd, authToken: config.twilio.authToken};
+}else{
+  console.log("*  : Loading: Twilio [Disabled]");
+  var twilioConfig = {accountSid: config.twilio.magicAccountSid, authToken: config.twilio.magicAuthToken};
+}
+const client = Promise.promisifyAll(require('twilio')(twilioConfig.accountSid, twilioConfig.authToken));
 //user consts
 // decide at which grade(s) to alert on
 const WORTHY_GRADES = ["AAA", "AA"];
@@ -37,10 +43,11 @@ module.exports = {
         post.interest = "?";
       }
       var bodyMessage = `New loan found: Grade: ${post.grade}, Borrowing: ${post.borrow_amnt}${post.currency}@${post.interest}% for ${post.days} days. Link: reddit.com/r/borrow/${post.id}`;
+      var fromNumber = config.twilio.enabled === true ? config.twilio.fromNumber : config.twilio.magicFromNumber;
       try {
         var message = yield client.messages.create({
           to: config.me.number,
-        	from: config.twilio.fromNumber,
+        	from: fromNumber,
           body: bodyMessage
         });
       }catch (err){

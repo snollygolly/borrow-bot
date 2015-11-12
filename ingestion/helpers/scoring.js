@@ -20,18 +20,22 @@ module.exports = {
     const AAA = 250;
     // for variables
     const PER_LENDER_REPAID = 6;
-    const PER_DOLLAR_REPAID = .1;
+    const PER_DOLLAR_REPAID = 0.1;
     const PER_LOAN_BORROWED = 3;
     const PER_LOAN_LENT = 5;
-    const PER_DOLLAR_LENT = .05;
+    const PER_DOLLAR_LENT = 0.05;
     const PAYPAL_PAYMENT = 3;
     const OTHER_PAYMENT = -6;
     // ($$$ - LOAN) / OFFSET = POINTS
     const DOLLAR_OFFSET = 120;
     // (OFFSET - DAYS) / 7
     const PERIOD_OFFSET = 35;
-    const PER_KARMA = .001;
-    const PER_DAY = .005;
+    // ABS(IDEAL - INT) * OFFSET
+    const INTEREST_OFFSET = 0.2;
+    // the "ideal" interest, expressed in whole number (25 = 25% = .25)
+    const IDEAL_INTEREST = 25;
+    const PER_KARMA = 0.0005;
+    const PER_DAY = 0.004;
     const PER_UNPAID = -30;
 
     let scoreObj = {};
@@ -89,6 +93,13 @@ module.exports = {
       scoreObj.score += periodOffset;
       scoreObj.raw.score.periodOffset = periodOffset;
     }
+    // interest offset
+    if (post.interest){
+      // if we even have a repayment date...
+      let interestOffset = (IDEAL_INTEREST - Math.abs(IDEAL_INTEREST - post.interest)) * INTEREST_OFFSET;
+      scoreObj.score += interestOffset;
+      scoreObj.raw.score.interestOffset = interestOffset;
+    }
     // per karma
     let perKarma = user.karma * PER_KARMA;
     scoreObj.score += perKarma;
@@ -108,17 +119,17 @@ module.exports = {
     // assign a grade
     if (scoreObj.score < F){
       scoreObj.grade = "F";
-    }else if (scoreObj.score > F && scoreObj.score < D){
+    }else if (scoreObj.score > F && scoreObj.score <= D){
       scoreObj.grade = "D";
-    }else if (scoreObj.score > D && scoreObj.score < C){
+    }else if (scoreObj.score > D && scoreObj.score <= C){
       scoreObj.grade = "C";
-    }else if (scoreObj.score > C && scoreObj.score < B){
+    }else if (scoreObj.score > C && scoreObj.score <= B){
       scoreObj.grade = "B";
-    }else if (scoreObj.score > B && scoreObj.score < A){
+    }else if (scoreObj.score > B && scoreObj.score <= A){
       scoreObj.grade = "A";
-    }else if (scoreObj.score > A && scoreObj.score < AA){
+    }else if (scoreObj.score > A && scoreObj.score <= AA){
       scoreObj.grade = "AA";
-    }else if (scoreObj.score > AA && scoreObj.score < AAA){
+    }else if (scoreObj.score > AA && scoreObj.score <= AAA){
       scoreObj.grade = "AAA";
     }else{
       scoreObj.grade = "???";
