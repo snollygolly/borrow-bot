@@ -5,7 +5,7 @@ const Promise = require('./common').Promise;
 const moment = require('./common').moment;
 if (config.twilio.enabled === true){
   console.log("*  : Loading: Twilio [Enabled]");
-  var twilioConfig = {accountSid: config.twilio.accountSd, authToken: config.twilio.authToken};
+  var twilioConfig = {accountSid: config.twilio.accountSid, authToken: config.twilio.authToken};
 }else{
   console.log("*  : Loading: Twilio [Disabled]");
   var twilioConfig = {accountSid: config.twilio.magicAccountSid, authToken: config.twilio.magicAuthToken};
