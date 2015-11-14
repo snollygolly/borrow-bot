@@ -58,7 +58,7 @@ module.exports = {
         // this is a test, ignore the rest of the stuff
         returnObj.id = post.id;
         returnObj.title = post.title;
-        returnObj.body = post.body;
+        returnObj.selftext = post.body;
         returnObj.created_utc = moment(post.created).format("YYYY-MM-DD HH:mm:ss").valueOf();
         // set up some other properties for this mock
         returnObj.type = "REQ";
@@ -91,9 +91,22 @@ module.exports = {
       // create the object based on the type it is
       switch (returnObj.type){
         case "REQ":
-          let dates = processPostDates(post);
-          returnObj.raw.dates = dates;
-          returnObj.repay_date = dates.date;
+          let datePost = {
+            title: post.title,
+            created_utc: post.created_utc
+          }
+          let dates = processPostDates(datePost);
+          returnObj.raw.titleDates = dates;
+          if (!dates.date){
+            //console.log("no date object, rerun!!");
+            // we didn't find a date on the first pass, let's try again with the body
+            datePost.title = post.body;
+            dates = processPostDates(datePost);
+            returnObj.raw.bodyDates = dates;
+            returnObj.repay_date = dates.date;
+          }else{
+            returnObj.repay_date = dates.date;
+          }
         case "PAID":
         case "UNPAID":
           var amounts = processPostAmounts(post.title);
