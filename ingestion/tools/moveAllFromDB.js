@@ -8,7 +8,7 @@ const co = require('../helpers/common').co;
 const moment = require('../helpers/common').moment;
 const fs = require('../helpers/common').fs;
 
-const jsonFile = ('./tests.json');
+const jsonFile = ('../test/posts.json');
 
 console.log(`***: Starting the script at ${moment()}`);
 
@@ -45,13 +45,13 @@ co(function *(){
     delete post.grade;
     delete post.comments;
     delete post.found;
-    delete post.created;
     if (post.notes.length > 1){
       post.notes = post.notes.split(", ");
     }else{
       post.notes = [];
     }
     delete post.raw;
+    post.repay_date = moment(post.repay_date).format("YYYY-MM-DD");
     return post;
   }
 }).catch(onerror);

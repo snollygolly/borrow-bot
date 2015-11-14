@@ -54,13 +54,24 @@ module.exports = {
       returnObj.raw = {};
 
       // set some values for everyone
-      returnObj.id = post.id;
-      returnObj.poster = post.author;
-      returnObj.title = post.title;
-      returnObj.body = post.selftext;
-      returnObj.created = moment.unix(post.created_utc).local().format("YYYY-MM-DD HH:mm:ss");
-      returnObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
-      returnObj.comments = post.num_comments;
+      if (post.notes){
+        // this is a test, ignore the rest of the stuff
+        returnObj.id = post.id;
+        returnObj.title = post.title;
+        returnObj.body = post.body;
+        returnObj.created_utc = moment(post.created).format("YYYY-MM-DD HH:mm:ss").valueOf();
+        // set up some other properties for this mock
+        returnObj.type = "REQ";
+      }else{
+        // this is the real deal
+        returnObj.id = post.id;
+        returnObj.poster = post.author;
+        returnObj.title = post.title;
+        returnObj.body = post.selftext;
+        returnObj.created = moment.unix(post.created_utc).local().format("YYYY-MM-DD HH:mm:ss");
+        returnObj.found = moment().local().format("YYYY-MM-DD HH:mm:ss");
+        returnObj.comments = post.num_comments;
+      }
 
       // figure out type of post by tag
       if (REQ_POST.exec(post.title) !== null){
