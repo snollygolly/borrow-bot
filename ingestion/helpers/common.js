@@ -4,7 +4,7 @@ exports.config = require('../../config.json');
 exports.Promise = require('bluebird');
 exports.co = require('co');
 exports.moment = require('moment');
-exports.rp = require('request-promise')
+exports.rp = require('request-promise');
 
 // Our new instance associated with a single account.
 // It takes in various configuration options.
@@ -24,6 +24,8 @@ exports.reddit = new Snoocore({
     scope: [ 'identity', 'read', 'vote', 'flair' ]
   }
 });
+
+exports.fs = exports.Promise.promisifyAll(require('fs'));
 
 const mysql = require('promise-mysql');
 exports.createConnection = createConnection;
