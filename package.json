@@ -4,7 +4,9 @@
   "description": "A bot for maximizing /r/borrow",
   "main": "index.js",
   "scripts": {
-    "test": "mocha ./ingestion/test -R json | node ./ingestion/test/reporters/custom.js"
+    "bot-start": "node ./ingestion/index.js",
+    "bot-test": "mocha ./ingestion/test",
+    "bot-test-summary": "mocha ./ingestion/test -R json | node ./ingestion/test/reporters/custom.js"
   },
   "repository": {
     "type": "git",
