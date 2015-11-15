@@ -45,6 +45,8 @@ co(function *(){
     delete post.poster;
     delete post.comments;
     delete post.found;
+    delete post.score;
+    delete post.grade;
     post.notes = [];
     delete post.raw;
     post.repay_date = moment(post.repay_date).format("YYYY-MM-DD");

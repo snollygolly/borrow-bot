@@ -1,34 +1,35 @@
+
 Data should match the borrow amount.
 
-      Pass: 82
+      Pass: 83
       Fail: 2
-      Total: 84
-      Pass Percentage: 97.62%
+      Total: 85
+      Pass Percentage: 97.65%
 
 Data should match the repay amount.
 
-      Pass: 61
+      Pass: 62
       Fail: 23
-      Total: 84
-      Pass Percentage: 72.62%
+      Total: 85
+      Pass Percentage: 72.94%
 
 Data should match the interest amount.
 
-      Pass: 63
+      Pass: 64
       Fail: 21
-      Total: 84
-      Pass Percentage: 75%
+      Total: 85
+      Pass Percentage: 75.29%
 
 Data should match the currency.
 
-      Pass: 80
+      Pass: 81
       Fail: 4
-      Total: 84
-      Pass Percentage: 95.24%
+      Total: 85
+      Pass Percentage: 95.29%
 
 Data should match the dates.
 
       Pass: 43
-      Fail: 41
-      Total: 84
-      Pass Percentage: 51.19%
+      Fail: 42
+      Total: 85
+      Pass Percentage: 50.59%
