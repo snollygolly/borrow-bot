@@ -34,7 +34,7 @@ showResponses $?
 
 # copying config
 printf "$white Copying config file...$escape\n"
-cp ../../config.json ./config.json &> /dev/null
+cp ../../../config.json ./config.json &> /dev/null
 showResponses $?
 
 # starting up the screen
