@@ -138,7 +138,7 @@ module.exports = {
     return scoreObj;
 
     function parseLoans(loans, userID){
-      var loanObj = {
+      let loanObj = {
         // how many total loans on file
         totalLoans: 0,
         // how many loans where you've been the lender
@@ -211,13 +211,13 @@ module.exports = {
       const PAYPAL_ACCEPTED = /(paypal|pay pal)/gi;
       const OTHER_ACCEPTED = /(moneygram|money gram|quickpay|interac|e-transfer|e transfer|western union|money pak|moneypak|direct deposit)/gi;
 
-      var returnObj = {};
+      let returnObj = {};
       returnObj.title = checkPayment(post.title);
       returnObj.body = checkPayment(post.body);
       return returnObj;
 
       function checkPayment(text){
-        var payObj = {
+        let payObj = {
           paypal: false,
           other: false
         };

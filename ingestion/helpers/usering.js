@@ -30,7 +30,7 @@ module.exports = {
       }
     }
     //set up user object for returning
-    var userObj = {};
+    let userObj = {};
     let userResult = yield reddit('/user/' + user + '/about').get();
     userObj.reddit_id = userResult.data.id;
     userObj.karma = userResult.data.link_karma + userResult.data.comment_karma;

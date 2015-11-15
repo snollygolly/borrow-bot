@@ -50,7 +50,7 @@ module.exports = {
 
     // process post functions
     function processPostByType(title){
-      var returnObj = {};
+      let returnObj = {};
       // for debugging
       returnObj.raw = {};
 
@@ -114,7 +114,7 @@ module.exports = {
           returnObj.closed = closed.closed;
         case "PAID":
         case "UNPAID":
-          var amounts = processPostAmounts(post.title);
+          let amounts = processPostAmounts(post.title);
           returnObj.raw.titleAmounts = amounts;
           if (!amounts.interest){
             // if the title doesn't have enough, maybe the body will...
@@ -141,16 +141,16 @@ module.exports = {
     }
 
     function processPostAmounts(title){
-      var returnObj = {};
+      let returnObj = {};
 
       // match titles that have two amounts in the title
-      var twoAmountMatch = TWO_AMOUNT.exec(title);
+      let twoAmountMatch = TWO_AMOUNT.exec(title);
       if (twoAmountMatch !== null){
         return doTwoAmount(title, twoAmountMatch, returnObj);
       }
 
       // match title that only have one amount in the title
-      var oneAmountMatch = ONE_AMOUNT.exec(title);
+      let oneAmountMatch = ONE_AMOUNT.exec(title);
       if (oneAmountMatch !== null){
         return doOneAmount(title, oneAmountMatch, returnObj);
       }
@@ -173,7 +173,7 @@ module.exports = {
 
       function doOneAmount (title, match, returnObj){
         returnObj.borrowAmnt = match[1].replace(/,/g, '');
-        var percIntMatch = PERC_INT.exec(title);
+        let percIntMatch = PERC_INT.exec(title);
         if (percIntMatch !== null){
           // they are manually specifying an interest amount, we can work with this.
           returnObj.interest = percIntMatch[1];
@@ -187,22 +187,22 @@ module.exports = {
     }
 
     function processPostCurrency(title){
-      var returnObj = {};
+      let returnObj = {};
       // start matching them and seeing what sticks, be greedy with this
-      var CADMatch = CAD.exec(title);
+      let CADMatch = CAD.exec(title);
       if (CADMatch !== null){
         return "CAD";
       }
-      var GBPMatch = GBP.exec(title);
+      let GBPMatch = GBP.exec(title);
       if (GBPMatch !== null){
         return "GBP";
       }
-      var EURMatch = EUR.exec(title);
+      let EURMatch = EUR.exec(title);
       if (EURMatch !== null){
         return "EUR";
       }
       // USD match is the greediest of all of them, match it last
-      var USDMatch = USD.exec(title);
+      let USDMatch = USD.exec(title);
       if (USDMatch !== null){
         return "USD";
       }
@@ -233,27 +233,27 @@ module.exports = {
     }
 
     function processPostDates(post){
-      var returnObj = {};
+      let returnObj = {};
       returnObj.raw = {};
 
       // matching for many days
-      var manyDaysMatch = MANY_DAYS.exec(post.title);
+      let manyDaysMatch = MANY_DAYS.exec(post.title);
       if (manyDaysMatch !== null){
         return doManyDays(post, manyDaysMatch, returnObj);
       }
       // matching for name month
-      var nameMonthMatch = NAME_MONTH.exec(post.title);
+      let nameMonthMatch = NAME_MONTH.exec(post.title);
       if (nameMonthMatch !== null){
         return doNameMonth(post, nameMonthMatch, returnObj);
       }
       // match for ordinal only (implied month)
-      var ordinalMatch = ORDINAL.exec(post.title);
+      let ordinalMatch = ORDINAL.exec(post.title);
       if (ordinalMatch !== null){
         // we matched for xxth day of the month, implied month
         return doImpliedMonth(post, ordinalMatch, returnObj);
       }
       // matching for slash dates
-      var slashDatesMatch = SLASH_DATES.exec(post.title);
+      let slashDatesMatch = SLASH_DATES.exec(post.title);
       if (slashDatesMatch !== null){
         return doSlashDates(post, slashDatesMatch, returnObj);
       }
@@ -273,7 +273,7 @@ module.exports = {
         // get the current year, although this probably won't work long term
         returnObj.raw.year = moment().format("YYYY");
         returnObj.raw.month = match[0];
-        var ordinalMatch = ORDINAL.exec(post.title);
+        let ordinalMatch = ORDINAL.exec(post.title);
         // if the ordinal doesn't match, set it to the end of the month
         if (ordinalMatch === null){
           returnObj.raw.day = moment(`${returnObj.raw.year} ${returnObj.raw.month}`, "YYYY MMM").endOf('month').format("DD");
@@ -291,7 +291,7 @@ module.exports = {
       function doImpliedMonth(post, match, returnObj){
         returnObj.raw.matchType = "Implied Month";
         returnObj.raw.day = match[1];
-        var createdDay = moment.unix(post.created_utc).format("DD");
+        let createdDay = moment.unix(post.created_utc).format("DD");
         if (createdDay > match[1]){
           returnObj.raw.month = moment.unix(post.created_utc).add(1, "month").format("MM");
           if (returnObj.raw.month === 1){

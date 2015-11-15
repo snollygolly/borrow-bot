@@ -3,12 +3,13 @@
 const config = require('./common').config;
 const Promise = require('./common').Promise;
 const moment = require('./common').moment;
+let twilioConfig;
 if (config.twilio.enabled === true){
   console.log("*  : Loading: Twilio [Enabled]");
-  var twilioConfig = {accountSid: config.twilio.accountSid, authToken: config.twilio.authToken};
+  twilioConfig = {accountSid: config.twilio.accountSid, authToken: config.twilio.authToken};
 }else{
   console.log("*  : Loading: Twilio [Disabled]");
-  var twilioConfig = {accountSid: config.twilio.magicAccountSid, authToken: config.twilio.magicAuthToken};
+  twilioConfig = {accountSid: config.twilio.magicAccountSid, authToken: config.twilio.magicAuthToken};
 }
 const client = Promise.promisifyAll(require('twilio')(twilioConfig.accountSid, twilioConfig.authToken));
 //user consts
@@ -42,10 +43,10 @@ module.exports = {
       if (!post.interest){
         post.interest = "?";
       }
-      var bodyMessage = `New loan found: Grade: ${post.grade}, Borrowing: ${post.borrow_amnt}${post.currency}@${post.interest}% for ${post.days} days. Link: reddit.com/r/borrow/${post.id}`;
-      var fromNumber = config.twilio.enabled === true ? config.twilio.fromNumber : config.twilio.magicFromNumber;
+      let bodyMessage = `New loan found: Grade: ${post.grade}, Borrowing: ${post.borrow_amnt}${post.currency}@${post.interest}% for ${post.days} days. Link: reddit.com/r/borrow/${post.id}`;
+      let fromNumber = config.twilio.enabled === true ? config.twilio.fromNumber : config.twilio.magicFromNumber;
       try {
-        var message = yield client.messages.create({
+        let message = yield client.messages.create({
           to: config.me.number,
         	from: fromNumber,
           body: bodyMessage

@@ -2,7 +2,7 @@
 
 const stdin = process.openStdin();
 
-var data = "";
+let data = "";
 
 stdin.on('data', function(chunk) {
   data += chunk;
