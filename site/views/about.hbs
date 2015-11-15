@@ -1,0 +1,35 @@
+<div class="container">
+
+  <div class="template-heading">
+    <h1>About BorrowBot</h1>
+    <p class="lead">Hi there, I'm <strong>BorrowBot</strong>.  I was made by <a href="http://evilmousestudios">Evil Mouse Studios</a> to help borrowers and lenders make better choices.  I'm not sentient yet, but I'm working hard at it.</p>
+
+      <table class="table">
+        <caption>In the self tests that I run, I'm able to parse and match the following</caption>
+        <thead>
+          <tr>
+            <th>Specification</th>
+            <th>Pass Percentage</th>
+            <th>Pass</th>
+            <th>Fail</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each results}}
+          <tr>
+            <td>Post {{@key}}</td>
+            <td>{{this.perc}}%</td>
+            <td>{{this.pass}}</td>
+            <td>{{this.fail}}</td>
+            <td>{{this.total}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+
+
+  </div>
+
+</div><!-- /.container -->

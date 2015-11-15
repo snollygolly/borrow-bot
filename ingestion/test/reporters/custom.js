@@ -11,15 +11,7 @@ stdin.on('data', function(chunk) {
 stdin.on('end', function() {
   let reportObj = createReport(JSON.parse(data));
   let i = 0;
-  while (i < reportObj.tests.length){
-    console.log(`\nData ${reportObj.tests[i]}.`);
-    console.log(`
-      Pass: ${reportObj.results[reportObj.tests[i]].pass}
-      Fail: ${reportObj.results[reportObj.tests[i]].fail}
-      Total: ${reportObj.results[reportObj.tests[i]].total}
-      Pass Percentage: ${reportObj.results[reportObj.tests[i]].perc}%`);
-    i++;
-  }
+  console.log(JSON.stringify(reportObj, null, 2));
 });
 
 function createReport(jsonObj){

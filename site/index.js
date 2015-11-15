@@ -1,6 +1,7 @@
 "use strict";
 
 const config = require('../config.json');
+
 const koa = require('koa');
 const serve = require('koa-static-folder')
 const hbs = require('koa-hbs');
@@ -8,6 +9,8 @@ const route = require('koa-route');
 const Promise = require('bluebird');
 const co = require('co');
 const app = koa();
+
+const testResults = require('../ingestion/test/results.json');
 
 const SITE_NAME = "BorrowBot"
 
@@ -33,6 +36,11 @@ app.use(function *(next){
 // routes
 app.use(route.get('/', function *(){
   yield this.render('index', {title: SITE_NAME});
+}));
+
+// routes
+app.use(route.get('/about', function *(){
+  yield this.render('about', {title: SITE_NAME, results: testResults.results});
 }));
 
 console.log(`${SITE_NAME} is now listening on port ${config.site.port}`);

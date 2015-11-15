@@ -1,0 +1,41 @@
+{
+  "tests": [
+    "should match the borrow amount",
+    "should match the repay amount",
+    "should match the interest amount",
+    "should match the currency",
+    "should match the dates"
+  ],
+  "results": {
+    "should match the borrow amount": {
+      "pass": 83,
+      "fail": 2,
+      "total": 85,
+      "perc": 97.65
+    },
+    "should match the repay amount": {
+      "pass": 62,
+      "fail": 23,
+      "total": 85,
+      "perc": 72.94
+    },
+    "should match the interest amount": {
+      "pass": 64,
+      "fail": 21,
+      "total": 85,
+      "perc": 75.29
+    },
+    "should match the currency": {
+      "pass": 81,
+      "fail": 4,
+      "total": 85,
+      "perc": 95.29
+    },
+    "should match the dates": {
+      "pass": 43,
+      "fail": 42,
+      "total": 85,
+      "perc": 50.59
+    }
+  }
+}
