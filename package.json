@@ -4,6 +4,7 @@
   "description": "A bot for maximizing /r/borrow",
   "main": "index.js",
   "scripts": {
+    "start": "cd site/ && node ./index.js",
     "bot-start": "node ./ingestion/index.js",
     "bot-test": "mocha ./ingestion/test",
     "bot-test-summary": "mocha ./ingestion/test -R json | node ./ingestion/test/reporters/custom.js | tee ./ingestion/test/results.txt",
@@ -23,6 +24,10 @@
     "bluebird": "^3.0.5",
     "chai": "^3.4.1",
     "co": "^4.6.0",
+    "koa": "^1.1.2",
+    "koa-hbs": "^0.7.0",
+    "koa-route": "^2.4.2",
+    "koa-static": "^1.5.2",
     "mocha": "^2.3.3",
     "moment": "^2.10.6",
     "promise-mysql": "^1.1.1",
