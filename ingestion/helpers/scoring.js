@@ -129,7 +129,7 @@ module.exports = {
       scoreObj.grade = "A";
     }else if (scoreObj.score > A && scoreObj.score <= AA){
       scoreObj.grade = "AA";
-    }else if (scoreObj.score > AA && scoreObj.score <= AAA){
+    }else if (scoreObj.score > AA){
       scoreObj.grade = "AAA";
     }else{
       scoreObj.grade = "???";

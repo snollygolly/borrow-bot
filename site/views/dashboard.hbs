@@ -1,0 +1,46 @@
+<div class="container">
+
+  <div class="template-heading">
+    <h1>Current Loans</h1>
+
+    <table class="table table-hover">
+      <caption>I'm constantly checking for new loans, here's the latest ones I've seen</caption>
+      <thead>
+        <tr>
+          <th>Poster</th>
+          <th>Grade</th>
+          <th>Borrow</th>
+          <th>Repay</th>
+          <th>Interest</th>
+          <th>Repayment Date</th>
+          <th>Created Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each results}}
+        <tr class='clickable-row {{grade_class this.grade}}' data-post-id={{this.id}}>
+          <td>{{this.poster}}</td>
+          <td>{{this.grade}}</td>
+          <td>
+            {{#if this.borrow_amnt}}
+              {{currency_symbol this.currency}}{{this.borrow_amnt}}
+            {{/if}}
+          </td>
+          <td>
+            {{#if this.repay_amnt}}
+              {{currency_symbol this.currency}}{{this.repay_amnt}}
+            {{/if}}
+          </td>
+          <td>
+            {{#if this.interest}}
+              {{this.interest}}%
+            {{/if}}
+          </td>
+          <td>{{pretty_date this.repay_date}}</td>
+          <td>{{pretty_elapsed this.created}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+</div><!-- /.container -->

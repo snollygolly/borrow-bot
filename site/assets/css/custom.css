@@ -8,3 +8,7 @@ body {
 .fine-print {
   padding-top: 50px;
 }
+
+.clickable-row {
+  cursor: pointer;
+}
