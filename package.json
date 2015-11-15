@@ -27,7 +27,7 @@
     "koa": "^1.1.2",
     "koa-hbs": "^0.7.0",
     "koa-route": "^2.4.2",
-    "koa-static": "^1.5.2",
+    "koa-static-folder": "^0.1.5",
     "mocha": "^2.3.3",
     "moment": "^2.10.6",
     "promise-mysql": "^1.1.1",
