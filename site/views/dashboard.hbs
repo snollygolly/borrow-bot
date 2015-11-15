@@ -3,7 +3,7 @@
   <div class="template-heading">
     <h1>Current Loans</h1>
 
-    <table class="table table-hover">
+    <table class="table table-hover" data-rows={{length results}}>
       <caption>I'm constantly checking for new loans, here's the latest ones I've seen</caption>
       <thead>
         <tr>
@@ -42,5 +42,11 @@
         {{/each}}
       </tbody>
     </table>
+    <nav>
+      <ul class="pager">
+        <li class="previous"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
+        <li class="next"><a href="#">Newer <span aria-hidden="true">&rarr;</span></a></li>
+      </ul>
+    </nav>
   </div>
 </div><!-- /.container -->

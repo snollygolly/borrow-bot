@@ -61,5 +61,8 @@ hbs.registerHelper('grade_class', function(grade) {
     default:
       return "active";
   }
+});
 
+hbs.registerHelper('length', function(arr) {
+  return arr.length;
 });
