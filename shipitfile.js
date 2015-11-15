@@ -1,10 +1,12 @@
 module.exports = function (shipit) {
   require('shipit-deploy')(shipit);
 
+  var deployPath = '~/borrow-bot-test';
+
   shipit.initConfig({
     default: {
       workspace: './tmp',
-      deployTo: '~/borrow-bot-test',
+      deployTo: deployPath,
       repositoryUrl: 'https://github.com/snollygolly/borrow-bot.git',
       ignores: ['.git', 'node_modules'],
       rsync: ['--del'],
@@ -18,10 +20,10 @@ module.exports = function (shipit) {
   });
 
   shipit.task('install', function () {
-    return shipit.remote('./install');
+    return shipit.remote("bash " + deployPath + '/current/install');
   });
 
   shipit.on('published', function () {
-    shipit.task.run(['install']);
+    shipit.start('install');
   });
 };
