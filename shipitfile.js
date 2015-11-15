@@ -16,4 +16,12 @@ module.exports = function (shipit) {
       servers: 'matthorning@borrowbot.net'
     }
   });
+
+  shipit.task('install', function () {
+    return shipit.remote('./install');
+  });
+
+  shipit.on('published', function () {
+    shipit.task.run(['install']);
+  });
 };
