@@ -44,6 +44,7 @@ module.exports = {
     const NAME_MONTH = / (?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?) /gi;
     const SLASH_DATES = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
     const MANY_DAYS = /(\d+) days/gi;
+    const PREARRANGED = /pre.?arranged/gi;
 
     return processPostByType(post.title);
 
@@ -62,6 +63,7 @@ module.exports = {
         returnObj.created_utc = moment(post.created).format("YYYY-MM-DD HH:mm:ss").valueOf();
         // set up some other properties for this mock
         returnObj.type = "REQ";
+        post.link_flair_css_class = null;
       }else{
         // this is the real deal
         returnObj.id = post.id;
@@ -98,7 +100,6 @@ module.exports = {
           let dates = processPostDates(datePost);
           returnObj.raw.titleDates = dates;
           if (!dates.date){
-            //console.log("no date object, rerun!!");
             // we didn't find a date on the first pass, let's try again with the body
             datePost.title = post.body;
             dates = processPostDates(datePost);
@@ -107,6 +108,10 @@ module.exports = {
           }else{
             returnObj.repay_date = dates.date;
           }
+          // process if this post is closed already
+          let closed = processPostClosed(post);
+          returnObj.raw.closed = closed;
+          returnObj.closed = closed.closed;
         case "PAID":
         case "UNPAID":
           var amounts = processPostAmounts(post.title);
@@ -204,15 +209,26 @@ module.exports = {
       return "???";
     }
 
-    function processPostFreshness(post){
-      var returnObj = {};
-      returnObj.comments = post.num_comments <= COMMENTS_FRESH ? "Fresh" : "Stale";
-      returnObj.commentsAmnt = post.num_comments;
-      let postTime = moment.unix(post.created_utc).local();
-      let nowTime = moment().local();
-      returnObj.timeAmnt = nowTime.diff(postTime, 'minutes');
-      returnObj.time = returnObj.timeAmnt <= TIME_FRESH ? "Fresh" : "Stale";
-      returnObj.timeFriendly = postTime.fromNow();
+    function processPostClosed(post){
+      let returnObj = {
+        closed: false
+      };
+      returnObj.raw = {};
+
+      //check to see if this loan was prearranged
+      let preArrangedTitleMatch = PREARRANGED.exec(post.title);
+      let preArrangedBodyMatch = PREARRANGED.exec(post.selftext);
+      returnObj.raw.preTitle = preArrangedTitleMatch;
+      returnObj.raw.preBody = preArrangedBodyMatch;
+      if (preArrangedTitleMatch !== null || preArrangedBodyMatch !== null){
+        // this was a prearranged loan, let's mark it closed
+        returnObj.closed = true;
+      }
+      returnObj.raw.linkFlair = post.link_flair_css_class;
+      if (post.link_flair_css_class === "nolongerneeded"){
+        // this post is marked closed
+        returnObj.closed = true;
+      }
       return returnObj;
     }
 

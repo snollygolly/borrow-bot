@@ -24,7 +24,7 @@ module.exports = {
     if (!post.grade){return;}
     let i = 0;
     while (i < WORTHY_GRADES.length){
-      if (post.grade.indexOf(WORTHY_GRADES[i]) !== -1){
+      if (post.grade.indexOf(WORTHY_GRADES[i]) !== -1 && post.closed === false){
         // this post has that grade, alert!
         console.log("** : Sending Alert!");
         yield sendAlert(post);
