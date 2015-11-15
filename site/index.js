@@ -39,14 +39,14 @@ app.use(function *(next){
 
 // routes
 app.use(route.get('/dashboard', function *(){
-  let results = yield getLoanResults(1);
+  let results = yield getLoanResults(0);
   yield this.render('dashboard', {title: SITE_NAME, results: results, script: "dashboard"});
 }));
 
 app.use(route.get('/dashboard/:page', function *(page){
   let start = (page - 1) * PER_PAGE_LIMIT;
   // set it to 1 in case the parsing failed
-  if (start <= 0){start = 1;}
+  if (start <= 0){start = 0;}
   let results = yield getLoanResults(start);
   yield this.render('dashboard', {title: SITE_NAME, results: results, script: "dashboard"});
 }));
