@@ -45,8 +45,9 @@ module.exports = {
       }
       let bodyMessage = `New loan found: Grade: ${post.grade}, Borrowing: ${post.borrow_amnt}${post.currency}@${post.interest}% for ${post.days} days. Link: reddit.com/r/borrow/${post.id}`;
       let fromNumber = config.twilio.enabled === true ? config.twilio.fromNumber : config.twilio.magicFromNumber;
+      let message;
       try {
-        let message = yield client.messages.create({
+        message = yield client.messages.create({
           to: config.me.number,
         	from: fromNumber,
           body: bodyMessage
