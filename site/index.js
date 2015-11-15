@@ -1,5 +1,6 @@
 "use strict";
 
+const config = require('../config.json');
 const koa = require('koa');
 const serve = require('koa-static-folder')
 const hbs = require('koa-hbs');
@@ -34,4 +35,5 @@ app.use(route.get('/', function *(){
   yield this.render('index', {title: SITE_NAME});
 }));
 
-app.listen(3050);
+console.log(`${SITE_NAME} is now listening on port ${config.site.port}`);
+app.listen(config.site.port);

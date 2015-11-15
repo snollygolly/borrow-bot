@@ -29,3 +29,5 @@ node_modules
 # For secrets
 config.json
 config.json.dev
+
+tmp

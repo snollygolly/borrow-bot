@@ -34,5 +34,9 @@
     "request-promise": "^1.0.2",
     "snoocore": "^3.2.0",
     "twilio": "^2.5.2"
+  },
+  "devDependencies": {
+    "shipit-cli": "^1.4.0",
+    "shipit-deploy": "^2.0.0"
   }
 }
