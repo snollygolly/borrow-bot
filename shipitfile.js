@@ -2,7 +2,7 @@ module.exports = function (shipit) {
   require('shipit-deploy')(shipit);
   require('shipit-shared')(shipit);
 
-  var deployPath = '~/borrow-bot-test';
+  var deployPath = '~/borrow-bot';
 
   shipit.initConfig({
     default: {

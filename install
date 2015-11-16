@@ -10,6 +10,7 @@ escape='\x1B[0m'
 
 #get args
 if [ $1 ]; then
+  rootPath=$1
   targetPath=$1config.json
 else
   printf "$red Args read failed $escape \n"
@@ -37,7 +38,7 @@ fi
 
 # installing
 printf "$white Running NPM install...$escape\n"
-npm install &> /dev/null
+cd $rootPath && npm install &> /dev/null
 showResponses $?
 
 # copying config
@@ -47,7 +48,7 @@ showResponses $?
 
 # starting up the screen
 printf "$white Starting up BorrowBot...$escape\n"
-screen -S borrow-bot -d -m npm start &> /dev/null
+cd $rootPath && screen -S borrow-bot -d -m npm start &> /dev/null
 showResponses $?
 
 elapsed_time=$(($SECONDS - $start_time))
