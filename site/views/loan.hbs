@@ -1,0 +1,80 @@
+<div class="container">
+
+  <div class="template-heading">
+    <h1>Loan Information</h1>
+
+    <table class="table table-hover" data-rows={{result.id}}>
+      <caption>When I looked at this loan {{pretty_elapsed result.found}}, this is what I saw</caption>
+        <tbody>
+          <tr>
+            <td>Status</td>
+            <td>{{#if result.closed}}Closed{{else}}Open{{/if}}</td>
+          </tr>
+          <tr>
+            <td>Post ID</td>
+            <td><a href="http://reddit.com/r/borrow/{{result.id}}" target="_blank">{{result.id}}</a></td>
+          </tr>
+          <tr>
+            <td>Post Type</td>
+            <td>{{result.type}}</td>
+          </tr>
+          <tr>
+            <td>Borrower</td>
+            <td><a href="http://reddit.com/u/{{result.poster}}" target="_blank">{{result.poster}}</a></td>
+          </tr>
+          <tr>
+            <td>Grade</td>
+            <td><span class="label label-{{grade_class result.grade}}">{{result.grade}}</span></td>
+          </tr>
+          <tr>
+            <td>Currency</td>
+            <td>{{result.currency}}
+            </td>
+          </tr>
+          <tr>
+            <td>Borrow Amount</td>
+            <td>
+              {{#if result.borrow_amnt}}
+                {{currency_symbol result.currency}}{{result.borrow_amnt}}
+              {{/if}}
+            </td>
+          </tr>
+          <tr>
+            <td>Repay Amount</td>
+            <td>
+              {{#if result.repay_amnt}}
+                {{currency_symbol result.currency}}{{result.repay_amnt}}
+              {{/if}}
+            </td>
+          </tr>
+          <tr>
+            <td>Interest</td>
+            <td>
+              {{#if result.interest}}
+                {{result.interest}}%
+              {{/if}}
+            </td>
+          </tr>
+          <tr>
+            <td>Repayment Date</td>
+            <td>
+              {{#if result.repay_date}}
+                {{pretty_date result.repay_date}}
+              {{else}}
+                Unknown
+              {{/if}}
+            </td>
+          </tr>
+        </tbody>
+    </table>
+    <p>This post looks to have been created on <strong>{{pretty_date result.created}}</strong>.</p>
+    <p>Not to brag, but I found it <strong>with{{pretty_difference result.created result.found}}</strong> of it being posted.</p>
+    <p><strong>Title: </strong>{{result.title}}</p>
+    <p><strong>Body: </strong>{{result.body}}</p>
+    <br>
+    <strong>Inside My Brain:</strong>
+    <pre>
+      {{result.raw}}
+    </pre>
+  </div>
+</div><!-- /.container -->

@@ -36,6 +36,6 @@ $( document ).ready(function() {
   });
 
   $(".clickable-row").click(function(e) {
-    window.document.location = "http://reddit.com/r/borrow/" + $(this).data("post-id");
+    window.document.location = "/loan/" + $(this).data("post-id");
   });
 });

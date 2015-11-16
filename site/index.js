@@ -51,6 +51,11 @@ app.use(route.get('/dashboard/:page', function *(page){
   yield this.render('dashboard', {title: SITE_NAME, results: results, script: "dashboard"});
 }));
 
+app.use(route.get('/loan/:id', function *(id){
+  let result = yield getLoanResult(id);
+  yield this.render('loan', {title: SITE_NAME, result: result});
+}));
+
 app.use(route.get('/about', function *(){
   yield this.render('about', {title: SITE_NAME, results: testResults.results});
 }));
@@ -63,6 +68,16 @@ console.log(`${SITE_NAME} is now listening on port ${config.site.port}`);
 app.listen(config.site.port);
 
 // functions start here
+function* getLoanResult(id){
+  let connection = yield mysql.createConnection({
+    host: config.db.host,
+    user: config.db.user,
+    password: config.db.password,
+    database: config.db.database
+  });
+  let result = yield connection.query("SELECT * FROM posts WHERE id = ?;", id);
+  return result[0];
+}
 
 function* getLoanResults(start){
   let connection = yield mysql.createConnection({
@@ -71,6 +86,6 @@ function* getLoanResults(start){
     password: config.db.password,
     database: config.db.database
   });
-  let results = connection.query(`SELECT * FROM posts WHERE type = "REQ" AND closed = 0 ORDER BY created DESC limit ${start},${PER_PAGE_LIMIT};`)
+  let results = yield connection.query("SELECT * FROM posts WHERE type = 'REQ' AND closed = 0 ORDER BY created DESC limit ?,?;", [start, PER_PAGE_LIMIT]);
   return results;
 }

@@ -4,7 +4,7 @@
   "description": "A bot for maximizing /r/borrow",
   "main": "index.js",
   "scripts": {
-    "start": "cd site/ && nodemon -e hbs ./index.js",
+    "start": "cd site/ && nodemon -e hbs,js ./index.js",
     "bot-start": "node ./ingestion/index.js",
     "bot-test": "mocha ./ingestion/test",
     "bot-test-summary": "mocha ./ingestion/test -R json | node ./ingestion/test/reporters/custom.js | tee ./ingestion/test/results.txt",

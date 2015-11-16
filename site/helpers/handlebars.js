@@ -43,6 +43,12 @@ hbs.registerHelper('pretty_elapsed', function(dateStr) {
   return moment(dateStr).fromNow();
 });
 
+hbs.registerHelper('pretty_difference', function(created, found) {
+  let createdMoment = moment(created);
+  let foundMoment = moment(found);
+  return createdMoment.to(foundMoment);
+});
+
 hbs.registerHelper('grade_class', function(grade) {
   switch (grade){
     case "AAA":
@@ -59,7 +65,7 @@ hbs.registerHelper('grade_class', function(grade) {
       return "danger";
       break;
     default:
-      return "active";
+      return "default";
   }
 });
 
