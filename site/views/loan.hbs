@@ -67,14 +67,33 @@
           </tr>
         </tbody>
     </table>
-    <p>This post looks to have been created on <strong>{{pretty_date result.created}}</strong>.</p>
-    <p>Not to brag, but I found it <strong>with{{pretty_difference result.created result.found}}</strong> of it being posted.</p>
-    <p><strong>Title: </strong>{{result.title}}</p>
-    <p><strong>Body: </strong>{{result.body}}</p>
+    <div class="well well-sm">
+      <p>This post looks to have been created on <strong>{{pretty_date result.created}}</strong>.<br>Not to brag, but I found it <strong>with{{pretty_difference result.created result.found}}</strong> of it being posted.</p>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Post Title</h3>
+      </div>
+      <div class="panel-body">
+        {{result.title}}
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Post Body</h3>
+      </div>
+      <div class="panel-body">
+        {{result.body}}
+      </div>
+    </div>
     <br>
-    <strong>Inside My Brain:</strong>
-    <pre>
+    <a class="btn btn-default" role="button" data-toggle="collapse" href="#innerBrain" aria-expanded="false" aria-controls="innerBrain">
+      Inside My Brain
+    </a>
+    <div class="collapse" id="innerBrain">
+      <pre>
 {{result.raw}}
-    </pre>
+      </pre>
+    </div>
   </div>
 </div><!-- /.container -->
