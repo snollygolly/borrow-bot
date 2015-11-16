@@ -8,6 +8,14 @@ blue='\x1B[0;34m'
 white='\x1B[0;37m'
 escape='\x1B[0m'
 
+#get args
+if [ $1 ]; then
+  targetPath=$1config.json
+else
+  printf "$red Args read failed $escape \n"
+  exit 1
+fi
+
 #show responses for commands
 showResponses() {
   #check if it exited cleanly or threw errors
@@ -30,6 +38,11 @@ fi
 # installing
 printf "$white Running NPM install...$escape\n"
 npm install &> /dev/null
+showResponses $?
+
+# copying config
+printf "$white Copying config file...$escape\n"
+cp ~/config.json $targetPath
 showResponses $?
 
 # starting up the screen

@@ -6,16 +6,6 @@ module.exports = function (shipit) {
 
   shipit.initConfig({
     default: {
-      shared: {
-        files: [
-          '~/config.json',
-          {
-            path: 'config.json',
-            overwrite: true,
-            chmod: '755',
-          }
-        ],
-      }
       workspace: './tmp',
       deployTo: deployPath,
       repositoryUrl: 'https://github.com/snollygolly/borrow-bot.git',
@@ -31,7 +21,7 @@ module.exports = function (shipit) {
   });
 
   shipit.task('install', function () {
-    return shipit.remote("bash " + deployPath + '/current/install');
+    return shipit.remote("bash " + deployPath + '/current/install ' + deployPath + "/current/");
   });
 
   shipit.on('published', function () {
