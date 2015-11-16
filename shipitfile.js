@@ -1,10 +1,21 @@
 module.exports = function (shipit) {
   require('shipit-deploy')(shipit);
+  require('shipit-shared')(shipit);
 
   var deployPath = '~/borrow-bot-test';
 
   shipit.initConfig({
     default: {
+      shared: {
+        files: [
+          '~/config.json',
+          {
+            path: 'config.json',
+            overwrite: true,
+            chmod: '755',
+          }
+        ],
+      }
       workspace: './tmp',
       deployTo: deployPath,
       repositoryUrl: 'https://github.com/snollygolly/borrow-bot.git',

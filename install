@@ -32,12 +32,6 @@ printf "$white Running NPM install...$escape\n"
 npm install &> /dev/null
 showResponses $?
 
-# copying config
-printf $(pwd)
-printf "$white Copying config file...$escape\n"
-cp ../../../config.json ./config.json &> /dev/null
-showResponses $?
-
 # starting up the screen
 printf "$white Starting up BorrowBot...$escape\n"
 screen -S borrow-bot -d -m npm start &> /dev/null
