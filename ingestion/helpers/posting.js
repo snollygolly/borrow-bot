@@ -42,7 +42,7 @@ module.exports = {
     // for matching date types
     const ORDINAL = / ([0-3]?[0-9])(st|nd|rd|th| |,|\.){1}/gi;
     const NAME_MONTH = / (?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?) /gi;
-    const SLASH_DATES = /(\d{1,2})[\/|-](\d{1,2})[\/|-]?(\d{2,4})?/gi;
+    const SLASH_DATES = /(?:on|before|latest|\(| )(\d{1,2})(?:\/|-|\.)(\d{1,2})(?:\/|-|\.)?(\d{2,4})?/gi;
     const MANY_DAYS = /(\d+) days/gi;
     const PREARRANGED = /pre.?arranged/gi;
 
@@ -236,6 +236,11 @@ module.exports = {
       let returnObj = {};
       returnObj.raw = {};
 
+      // matching for slash dates
+      let slashDatesMatch = SLASH_DATES.exec(post.title);
+      if (slashDatesMatch !== null){
+        return doSlashDates(post, slashDatesMatch, returnObj);
+      }
       // matching for many days
       let manyDaysMatch = MANY_DAYS.exec(post.title);
       if (manyDaysMatch !== null){
@@ -251,11 +256,6 @@ module.exports = {
       if (ordinalMatch !== null){
         // we matched for xxth day of the month, implied month
         return doImpliedMonth(post, ordinalMatch, returnObj);
-      }
-      // matching for slash dates
-      let slashDatesMatch = SLASH_DATES.exec(post.title);
-      if (slashDatesMatch !== null){
-        return doSlashDates(post, slashDatesMatch, returnObj);
       }
 
       // if we didn't match anything, return a null and give up
