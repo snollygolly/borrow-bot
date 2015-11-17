@@ -40,9 +40,9 @@ module.exports = {
     const EUR = /.+(€|EUR)/gi;
     const USD = /.+(\$|USD)/gi;
     // for matching date types
-    const ORDINAL = / ([0-3]?[0-9])(st|nd|rd|th| |,){1}/gi;
+    const ORDINAL = / ([0-3]?[0-9])(st|nd|rd|th| |,|\.){1}/gi;
     const NAME_MONTH = / (?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?) /gi;
-    const SLASH_DATES = /(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/gi;
+    const SLASH_DATES = /(\d{1,2})[\/|-](\d{1,2})[\/|-]?(\d{2,4})?/gi;
     const MANY_DAYS = /(\d+) days/gi;
     const PREARRANGED = /pre.?arranged/gi;
 
