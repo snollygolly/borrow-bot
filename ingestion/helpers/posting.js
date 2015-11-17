@@ -60,7 +60,7 @@ module.exports = {
         returnObj.id = post.id;
         returnObj.title = post.title;
         returnObj.selftext = post.body;
-        returnObj.created_utc = moment(post.created).format("YYYY-MM-DD HH:mm:ss").valueOf();
+        post.created_utc = moment(new Date(post.created)).unix();
         // set up some other properties for this mock
         returnObj.type = "REQ";
         post.link_flair_css_class = null;
@@ -94,6 +94,7 @@ module.exports = {
       switch (returnObj.type){
         case "REQ":
           let datePost = {
+            id: post.id,
             title: post.title,
             created_utc: post.created_utc
           }
@@ -279,11 +280,16 @@ module.exports = {
           returnObj.raw.day = moment(`${returnObj.raw.year} ${returnObj.raw.month}`, "YYYY MMM").endOf('month').format("DD");
         }else{
           returnObj.raw.day = ordinalMatch[1];
-          if (moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY").isAfter(moment.unix(post.created_utc)) !== true){
-            // the day/month combo is in the future, so leave the year alone
-            returnObj.raw.year = moment(moment.unix(post.created_utc)).add(1, "year").format("YYYY");
-          }
         }
+        // check if this date is in the future
+        let parsedMoment = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY");
+        let createdMoment = moment.unix(post.created_utc);
+        let isAfterResult = parsedMoment.isAfter(createdMoment);
+        if (isAfterResult !== true){
+          // the day/month combo is in the future, so add a year
+          returnObj.raw.year = moment(moment.unix(post.created_utc)).add(1, "year").format("YYYY");
+        }
+        // return the date
         returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MMM DD YYYY").format("YYYY-MM-DD");
         return returnObj;
       }
