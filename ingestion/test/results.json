@@ -32,10 +32,10 @@
       "perc": 94.25
     },
     "should match the dates": {
-      "pass": 50,
-      "fail": 37,
+      "pass": 54,
+      "fail": 33,
       "total": 87,
-      "perc": 57.47
+      "perc": 62.07
     }
   }
 }

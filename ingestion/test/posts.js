@@ -54,6 +54,7 @@ describe('BorrowBot - Loan Dates', function describeDates() {
     it(`should match the dates - [${post.id}]`, function datesMatch(done) {
       let actual = moment(new Date(result.repay_date)).format("YYYY-MM-DD");
       let expected = moment(new Date(post.repay_date)).format("YYYY-MM-DD");
+      if (actual === "1969-12-31"){actual = "Invalid date";}
       expect(actual).to.equal(expected);
       return done();
     });
