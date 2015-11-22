@@ -344,6 +344,14 @@ module.exports = {
           returnObj.raw.month = match[1];
           returnObj.raw.day = match[2];
         }
+        // check if this date is in the future
+        let parsedMoment = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY");
+        let createdMoment = moment.unix(post.created_utc);
+        let isAfterResult = parsedMoment.isAfter(createdMoment);
+        if (isAfterResult !== true){
+          // the day/month combo is in the future, so add a year
+          returnObj.raw.year = moment(moment.unix(post.created_utc)).add(1, "year").format("YYYY");
+        }
         returnObj.date = moment(`${returnObj.raw.month} ${returnObj.raw.day} ${returnObj.raw.year}`, "MM DD YYYY").format("YYYY-MM-DD");
         return returnObj;
       }
