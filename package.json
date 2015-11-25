@@ -9,7 +9,7 @@
     "bot-start": "node ./ingestion/index.js",
     "bot-test": "mocha ./ingestion/test",
     "bot-test-summary": "mocha ./ingestion/test -R json | node ./ingestion/test/reporters/custom.js | tee ./ingestion/test/results.json",
-    "bot-move-one": "cd ingestion/tools && node ./moveFromDB.js"
+    "bot-import": "cd ingestion/tools && node ./moveFromDB.js"
   },
   "repository": {
     "type": "git",

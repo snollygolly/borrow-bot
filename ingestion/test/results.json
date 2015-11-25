@@ -8,34 +8,34 @@
   ],
   "results": {
     "should match the borrow amount": {
-      "pass": 87,
+      "pass": 89,
       "fail": 2,
-      "total": 89,
-      "perc": 97.75
+      "total": 91,
+      "perc": 97.8
     },
     "should match the repay amount": {
-      "pass": 66,
-      "fail": 23,
-      "total": 89,
-      "perc": 74.16
+      "pass": 67,
+      "fail": 24,
+      "total": 91,
+      "perc": 73.63
     },
     "should match the interest amount": {
-      "pass": 68,
-      "fail": 21,
-      "total": 89,
-      "perc": 76.4
+      "pass": 69,
+      "fail": 22,
+      "total": 91,
+      "perc": 75.82
     },
     "should match the currency": {
-      "pass": 84,
+      "pass": 86,
       "fail": 5,
-      "total": 89,
-      "perc": 94.38
+      "total": 91,
+      "perc": 94.51
     },
     "should match the dates": {
-      "pass": 64,
-      "fail": 25,
-      "total": 89,
-      "perc": 71.91
+      "pass": 65,
+      "fail": 26,
+      "total": 91,
+      "perc": 71.43
     }
   }
 }
