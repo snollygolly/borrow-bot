@@ -6,15 +6,38 @@ const koa = require('koa');
 const serve = require('koa-static-folder')
 const hbs = require('koa-hbs');
 const mysql = require('promise-mysql');
-const route = require('koa-route');
+const Router = require('koa-router');
 const Promise = require('bluebird');
 const co = require('co');
+// passport requires
+const session = require('koa-generic-session');
+const bodyParser = require('koa-bodyparser');
+const passport = require('koa-passport');
+
 const app = koa();
 
 const testResults = require('../ingestion/test/results.json');
 
 const SITE_NAME = "BorrowBot"
 const PER_PAGE_LIMIT = 25;
+
+const routes = new Router();
+require('./auth');
+require('./helpers/handlebars');
+
+// trust proxy
+app.proxy = true;
+
+// sessions
+app.keys = [config.site.secret];
+app.use(session());
+
+// body parser
+app.use(bodyParser());
+
+// authentication
+app.use(passport.initialize());
+app.use(passport.session());
 
 // statically serve assets
 app.use(serve('./assets'));
@@ -27,42 +50,62 @@ app.use(hbs.middleware({
   defaultLayout: 'main'
 }));
 
-require('./helpers/handlebars');
-
-// example date middlewear
-app.use(function *(next){
-  let start = new Date;
-  yield next;
-  let ms = new Date - start;
-  console.log('%s %s - %s', this.method, this.url, ms);
+// routes
+routes.get('/login', function* (){
+  yield this.render('login');
 });
 
-// routes
-app.use(route.get('/dashboard', function *(){
+routes.get('/logout', function* () {
+  this.logout();
+  this.redirect('/');
+});
+
+routes.get('/auth/reddit',
+  passport.authenticate('reddit')
+);
+
+routes.get('/auth/reddit/callback',
+  passport.authenticate('reddit', {
+    successRedirect: '/dashboard',
+    failureRedirect: '/'
+  })
+);
+
+routes.get('/dashboard', function* (){
   let results = yield getLoanResults(0);
   yield this.render('dashboard', {title: SITE_NAME, results: results, script: "dashboard"});
-}));
+});
 
-app.use(route.get('/dashboard/:page', function *(page){
+routes.get('/dashboard/:page', function* (page){
   let start = (page - 1) * PER_PAGE_LIMIT;
   // set it to 1 in case the parsing failed
   if (start <= 0){start = 0;}
   let results = yield getLoanResults(start);
   yield this.render('dashboard', {title: SITE_NAME, results: results, script: "dashboard"});
-}));
+});
 
-app.use(route.get('/loan/:id', function *(id){
+routes.get('/loan/:id', function* (id){
   let result = yield getLoanResult(id);
   yield this.render('loan', {title: SITE_NAME, result: result});
-}));
+});
 
-app.use(route.get('/about', function *(){
+routes.get('/about', function* (){
   yield this.render('about', {title: SITE_NAME, results: testResults.results});
-}));
+});
 
-app.use(route.get('/', function *(){
-  yield this.render('index', {title: SITE_NAME});
-}));
+routes.get('/', function* (){
+  let user;
+  console.log(this.session.passport);
+  if (this.isAuthenticated()) {
+    user = this.session.passport.user;
+  }else{
+    user = null;
+  }
+  console.log(user);
+  yield this.render('index', {title: SITE_NAME, user: user});
+});
+
+app.use(routes.middleware());
 
 console.log(`${SITE_NAME} is now listening on port ${config.site.port}`);
 app.listen(config.site.port);
