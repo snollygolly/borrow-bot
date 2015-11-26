@@ -12,7 +12,12 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav navbar-right">
         <li><a href="/dashboard">Dashboard</a></li>
-        <li><a href="/login">Login</a></li>
+        {{#if user}}
+          <li><a href="/settings">Settings</a></li>
+        {{else}}
+          <li><a href="/login">Login</a></li>
+        {{/if}}
+
         <li><a href="/about">About</a></li>
       </ul>
     </div>

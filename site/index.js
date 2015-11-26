@@ -94,7 +94,15 @@ routes.get('/about', function* (){
 });
 
 routes.get('/', function* (){
-  yield this.render('index', {title: SITE_NAME});
+  let user;
+  console.log(this.session.passport);
+  if (this.isAuthenticated()) {
+    user = this.session.passport.user;
+  }else{
+    user = null;
+  }
+  console.log(user);
+  yield this.render('index', {title: SITE_NAME, user: user});
 });
 
 app.use(routes.middleware());
