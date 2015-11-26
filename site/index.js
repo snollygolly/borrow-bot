@@ -17,7 +17,7 @@ const app = koa();
 exports.app = app;
 exports.passport = passport;
 
-require('./auth');
+require('./models/auth');
 require('./helpers/handlebars');
 
 // trust proxy

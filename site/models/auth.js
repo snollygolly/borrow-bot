@@ -1,7 +1,7 @@
 "use strict";
 
-const passport = require('koa-passport');
-const config = require('../config.json');
+const passport = require('../index.js').passport;
+const config = require('../../config.json');
 
 var user = { id: 1, username: 'test' }
 
