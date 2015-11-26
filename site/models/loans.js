@@ -13,7 +13,7 @@ module.exports.getAllLoans = function* getAllLoans(start){
 		password: config.db.password,
 		database: config.db.database
 	});
-	let results = yield connection.query("SELECT * FROM posts WHERE type = 'REQ' AND closed = 0 ORDER BY created DESC limit ?,?;", [start, PER_PAGE_LIMIT]);
+	let results = yield connection.query("SELECT * FROM posts WHERE type = 'REQ' AND closed = 0 ORDER BY created DESC limit ?,?;", [start, config.site.perPageLimit]);
 	return results;
 }
 
