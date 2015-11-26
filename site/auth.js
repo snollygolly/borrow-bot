@@ -1,3 +1,5 @@
+"use strict";
+
 const passport = require('koa-passport');
 const config = require('../config.json');
 
@@ -12,9 +14,9 @@ passport.deserializeUser(function(id, done) {
 });
 
 const RedditStrategy = require('passport-reddit').Strategy
-passport.use(new RedditStrategy({
-    clientID: 'vF3Tawk22KviCw',
-    clientSecret: '0z2iAygCFy3I9HZpQ_UVibJmzzo',
+  passport.use(new RedditStrategy({
+    clientID: config.site.clientID,
+    clientSecret: config.site.clientSecret,
     callbackURL: config.site.host + 'auth/reddit/callback',
     state: true
   },
