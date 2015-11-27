@@ -11,6 +11,7 @@ const routes = new Router();
 const testResults = require('../ingestion/test/results.json');
 
 const loans = require('./controllers/loans.js');
+const accounts = require('./controllers/accounts.js');
 
 // routes
 let user = null;
@@ -51,6 +52,8 @@ routes.get('/auth/reddit/callback',
     failureRedirect: '/'
   })
 );
+
+routes.get('/settings', accounts.index);
 
 routes.get('/dashboard', loans.getDashboardPage);
 routes.get('/dashboard/:page', loans.getDashboardPage);

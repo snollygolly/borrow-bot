@@ -1,0 +1,14 @@
+<div class="container">
+
+  <div>
+    <h1>Settings for {{ user.username }}</h1>
+    <div class="form-group">
+      <label for="phoneNumber">Phone Number</label>
+      <input type="text" class="form-control" id="phoneNumber" placeholder="Phone Number"
+      {{#if user.phone_number}}
+        value="{{ user.phone_number }}"
+      {{/if}}>
+    </div>
+  </div>
+
+</div><!-- /.container -->

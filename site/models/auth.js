@@ -5,13 +5,11 @@ const config = require('../../config.json');
 const model = require('./accounts');
 const co = require('co');
 
-var user = { id: 1, username: 'test' }
-
 passport.serializeUser(function(user, done) {
-  done(null, user.id);
+  done(null, user);
 });
 
-passport.deserializeUser(function(id, done) {
+passport.deserializeUser(function(user, done) {
   done(null, user);
 });
 
