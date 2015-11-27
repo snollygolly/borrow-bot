@@ -5,8 +5,6 @@ const config = require('../config.json');
 const koa = require('koa');
 const serve = require('koa-static-folder')
 const hbs = require('koa-hbs');
-const Promise = require('bluebird');
-const co = require('co');
 const router = require('koa-router');
 // passport requires
 const session = require('koa-generic-session');
