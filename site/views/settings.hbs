@@ -1,7 +1,7 @@
 <div class="container">
-
   <div>
     <h1>Settings for {{ user.username }}</h1>
+    <br>
     <div class="form-group">
       <label for="phoneNumber">Phone Number</label>
       <input type="text" class="form-control" id="phoneNumber" placeholder="Phone Number"
@@ -9,6 +9,39 @@
         value="{{ user.phone_number }}"
       {{/if}}>
     </div>
-  </div>
 
+    <div class="form-group">
+      <label for="emailAddress">Email Address</label>
+      <input type="email" class="form-control" id="emailAddress" placeholder="Email Address"
+      {{#if user.email}}
+        value="{{ user.email }}"
+      {{/if}}>
+    </div>
+
+    <h3>Alerting Preferences</h3>
+    <br>
+    <h4>Alert me when BorrowBot finds loans of this grade:</h4>
+    <label class="checkbox-inline">
+      <input type="checkbox" id="grade" value="AAA"
+      {{in_array AAA alerts.grades}}> <span class="label label-success">AAA</span>
+    </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" id="grade" value="AA"> <span class="label label-success">AA</span>
+    </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" id="grade" value="A"> <span class="label label-success">A</span>
+    </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" id="grade" value="B"> <span class="label label-warning">B</span>
+    </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" id="grade" value="C"> <span class="label label-warning">C</span>
+    </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" id="grade" value="D"> <span class="label label-danger">D</span>
+    </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" id="grade" value="F"> <span class="label label-danger">F</span>
+    </label>
+  </div>
 </div><!-- /.container -->

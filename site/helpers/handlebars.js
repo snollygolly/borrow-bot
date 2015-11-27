@@ -69,6 +69,14 @@ hbs.registerHelper('grade_class', function(grade) {
   }
 });
 
+hbs.registerHelper('in_array_checkbox', function(needle, haystack) {
+  if (haystack.indexOf(needle) >= 0){
+    return "checked";
+  }else{
+    return "";
+  }
+});
+
 hbs.registerHelper('length', function(arr) {
   return arr.length;
 });
