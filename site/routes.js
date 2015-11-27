@@ -13,22 +13,27 @@ const testResults = require('../ingestion/test/results.json');
 const loans = require('./controllers/loans.js');
 
 // routes
+let user = null;
+
 routes.get('/', function* (){
-  let user;
   if (this.isAuthenticated()) {
     user = this.session.passport.user;
-  }else{
-    user = null;
   }
   yield this.render('index', {title: config.site.name, user: user});
 });
 
 routes.get('/about', function* (){
-  yield this.render('about', {title: config.site.name, results: testResults.results});
+  if (this.isAuthenticated()) {
+    user = this.session.passport.user;
+  }
+  yield this.render('about', {title: config.site.name, results: testResults.results, user: user});
 });
 
 routes.get('/login', function* (){
-  yield this.render('login');
+  if (this.isAuthenticated()) {
+    user = this.session.passport.user;
+  }
+  yield this.render('login', {user: user});
 });
 
 routes.get('/logout', function* () {
