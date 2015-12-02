@@ -54,6 +54,7 @@ routes.get('/auth/reddit/callback',
 );
 
 routes.get('/settings', accounts.index);
+routes.put('/account', accounts.updateAccount);
 
 routes.get('/dashboard', loans.getDashboardPage);
 routes.get('/dashboard/:page', loans.getDashboardPage);

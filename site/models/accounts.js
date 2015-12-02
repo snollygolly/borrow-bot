@@ -25,3 +25,14 @@ module.exports.createAccount = function* createAccount(profile){
 	let results = yield connection.query("INSERT INTO accounts (id, username, alerts) VALUES (?, ?, '[]');", [profile.id, profile.name]);
 	return results;
 };
+
+module.exports.modifyAccount = function* modifyAccount(account){
+	const connection = yield mysql.createConnection({
+		host: config.db.host,
+		user: config.db.user,
+		password: config.db.password,
+		database: config.db.database
+	});
+	let results = yield connection.query("UPDATE accounts SET ? WHERE id = ?;", [account, account.id]);
+	return results;
+};
