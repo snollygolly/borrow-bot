@@ -86,14 +86,17 @@
         {{result.body}}
       </div>
     </div>
-    <br>
-    <a class="btn btn-default" role="button" data-toggle="collapse" href="#innerBrain" aria-expanded="false" aria-controls="innerBrain">
-      Inside My Brain
-    </a>
-    <div class="collapse" id="innerBrain">
-      <pre>
-{{result.raw}}
-      </pre>
-    </div>
+    {{#if_eq user.admin 1}}
+    <!--you have access rights to see inside BorrowBot's brain, yay!-->
+      <br>
+      <a class="btn btn-default" role="button" data-toggle="collapse" href="#innerBrain" aria-expanded="false" aria-controls="innerBrain">
+        Inside My Brain
+      </a>
+      <div class="collapse" id="innerBrain">
+        <pre>
+  {{result.raw}}
+        </pre>
+      </div>
+    {{/if_eq}}
   </div>
 </div><!-- /.container -->
