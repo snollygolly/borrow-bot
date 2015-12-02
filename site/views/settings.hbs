@@ -19,29 +19,63 @@
     </div>
 
     <h3>Alerting Preferences</h3>
-    <br>
+    <h4>How should BorrowBot alert me?</h4>
+    <div class="radio">
+      <label>
+        <input type="radio" name="alert_type" id="alert_none" value="none" {{check_if user.alert_type 'none'}}>
+        Don't alert me, I don't want to hear from you.
+      </label>
+    </div>
+    <div class="radio">
+      <label>
+        <input type="radio" name="alert_type" id="alert_email" value="email" {{check_if user.alert_type 'email'}}>
+        Alert me via email, I check those things.
+      </label>
+    </div>
+    <div class="radio">
+      <label>
+        <input type="radio" name="alert_type" id="alert_sms" value="sms" {{check_if user.alert_type 'sms'}}>
+        BorrowBot, you better text me those loans.
+      </label>
+    </div>
     <h4>Alert me when BorrowBot finds loans of this grade:</h4>
-    <label class="checkbox-inline">
-      <input type="checkbox" id="grade" value="AAA"
-      {{in_array AAA alerts.grades}}> <span class="label label-success">AAA</span>
-    </label>
-    <label class="checkbox-inline">
-      <input type="checkbox" id="grade" value="AA"> <span class="label label-success">AA</span>
-    </label>
-    <label class="checkbox-inline">
-      <input type="checkbox" id="grade" value="A"> <span class="label label-success">A</span>
-    </label>
-    <label class="checkbox-inline">
-      <input type="checkbox" id="grade" value="B"> <span class="label label-warning">B</span>
-    </label>
-    <label class="checkbox-inline">
-      <input type="checkbox" id="grade" value="C"> <span class="label label-warning">C</span>
-    </label>
-    <label class="checkbox-inline">
-      <input type="checkbox" id="grade" value="D"> <span class="label label-danger">D</span>
-    </label>
-    <label class="checkbox-inline">
-      <input type="checkbox" id="grade" value="F"> <span class="label label-danger">F</span>
-    </label>
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="grade_aaa" value="AAA" {{check_if user.grade_aaa 1}}> <span class="label label-success">AAA</span>
+      </label>
+    </div>
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="grade_aa" value="AA" {{check_if user.grade_aa 1}}> <span class="label label-success">AA</span>
+      </label>
+    </div>
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="grade_a" value="A" {{check_if user.grade_a 1}}> <span class="label label-success">A</span>
+      </label>
+    </div>
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="grade_b" value="B" {{check_if user.grade_b 1}}> <span class="label label-warning">B</span>
+      </label>
+    </div>
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="grade_c" value="C" {{check_if user.grade_c 1}}> <span class="label label-warning">C</span>
+      </label>
+    </div>
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="grade_d" value="D" {{check_if user.grade_d 1}}> <span class="label label-danger">D</span>
+      </label>
+    </div>
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="grade_f" value="F" {{check_if user.grade_f 1}}> <span class="label label-danger">F</span>
+      </label>
+    </div>
+    <br>
+    <button type="submit" class="btn btn-default">Save</button>
+    <br>
   </div>
 </div><!-- /.container -->

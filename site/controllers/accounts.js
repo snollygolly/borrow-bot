@@ -16,6 +16,5 @@ module.exports.index = function* index(){
 		return this.redirect('/');
 	}
 	console.log(user);
-	let alerts = JSON.parse(user.alerts);
-	yield this.render('settings', {title: config.site.name, user: user, alerts: alerts});
+	yield this.render('settings', {title: config.site.name, user: user});
 }
