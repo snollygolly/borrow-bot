@@ -1,0 +1,35 @@
+{
+  "auth":{
+    "key": "REDDIT KEY",
+    "secret": "REDDIT SECRET",
+    "username": "REDDIT USERNAME",
+    "password": "REDDIT PASSWORD"
+  },
+  "db":{
+    "host": "127.0.0.1",
+    "user": "root",
+    "password": "root",
+    "database": "borrow-bot"
+  },
+  "site": {
+    "name": "NAME OF THE WEBSITE",
+    "port": 3000,
+		"secret": "borrow-bot-is-the-best",
+		"host": "http://localhost:3000/",
+    "clientID": "OAUTH CLIENT ID",
+    "clientSecret": "OAUTH CLIENT SECRET",
+    "perPageLimit": 25
+  },
+  "twilio":{
+    "enabled": false,
+    "accountSid": "TWILIO ACCOUNT SID",
+    "authToken": "TWILIO AUTH TOKEN",
+    "magicAccountSid": "TWILIO TEST ACCOUNT SID",
+    "magicAuthToken": "TWILIO TEST AUTH TOKEN",
+    "fromNumber": "+15555555555",
+    "magicFromNumber": "+15555555555"
+  },
+  "me": {
+    "number": "+15555555555"
+  }
+}
