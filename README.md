@@ -1,5 +1,5 @@
-# borrow-bot
-A data collection bot and website aimed at helping lenders make good choices at /r/borrow.
+# :moneybag: borrow-bot
+A data collection bot and website aimed at helping lenders make good choices at [/r/borrow](http://reddit.com/r/borrow).
 
 If you want to use BorrowBot without actually performing all these steps, check out the hosted version at [borrowbot.net](http://borrowbot.net)
 
