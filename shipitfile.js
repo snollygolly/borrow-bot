@@ -17,7 +17,7 @@ module.exports = function (shipit) {
       shallowClone: true
     },
     production: {
-      servers: config.deploy.username + '@' config.deploy.hostname
+      servers: config.deploy.username + '@' + config.deploy.hostname
     }
   });
 
