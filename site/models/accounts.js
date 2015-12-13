@@ -22,7 +22,7 @@ module.exports.createAccount = function* createAccount(profile){
 		password: config.db.password,
 		database: config.db.database
 	});
-	let results = yield connection.query("INSERT INTO accounts (id, username, alerts) VALUES (?, ?, '[]');", [profile.id, profile.name]);
+	let results = yield connection.query("INSERT INTO accounts (id, username) VALUES (?, ?);", [profile.id, profile.name]);
 	return results;
 };
 
