@@ -1,6 +1,7 @@
 module.exports = function (shipit) {
   require('shipit-deploy')(shipit);
   require('shipit-shared')(shipit);
+  var config = require('./config.json');
 
   var deployPath = '~/borrow-bot';
 
@@ -16,7 +17,7 @@ module.exports = function (shipit) {
       shallowClone: true
     },
     production: {
-      servers: 'matthorning@borrowbot.net'
+      servers: config.deploy.username + '@' config.deploy.hostname
     }
   });
 

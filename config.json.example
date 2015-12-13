@@ -11,7 +11,7 @@
     "password": "root",
     "database": "borrow-bot"
   },
-  "site": {
+  "site":{
     "name": "NAME OF THE WEBSITE",
     "port": 3000,
 		"secret": "borrow-bot-is-the-best",
@@ -19,6 +19,10 @@
     "clientID": "OAUTH CLIENT ID",
     "clientSecret": "OAUTH CLIENT SECRET",
     "perPageLimit": 25
+  },
+  "deploy": {
+    "username": "USERNAME",
+    "hostname": "HOSTNAME"
   },
   "twilio":{
     "enabled": false,
@@ -29,7 +33,7 @@
     "fromNumber": "+15555555555",
     "magicFromNumber": "+15555555555"
   },
-  "me": {
+  "me":{
     "number": "+15555555555"
   }
 }
