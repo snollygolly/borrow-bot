@@ -14,7 +14,7 @@ If you want to use BorrowBot without actually performing all these steps, check 
 git clone https://github.com/snollygolly/borrow-bot.git
 ```
 
-* Install packages (from inside the surveyor folder)
+* Install packages (from inside the borrow-bot folder)
 ```
 npm install
 ```
