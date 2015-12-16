@@ -48,7 +48,7 @@ routes.get('/auth/reddit',
 
 routes.get('/auth/reddit/callback',
   passport.authenticate('reddit', {
-    successRedirect: '/dashboard',
+    successRedirect: '/settings',
     failureRedirect: '/'
   })
 );

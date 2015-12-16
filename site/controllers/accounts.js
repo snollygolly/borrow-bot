@@ -8,16 +8,20 @@ let user = null;
 
 module.exports.index = function* index(){
 	if (this.isAuthenticated()) {
-	  user = this.session.passport.user;
+		// TODO: fix the user fetching to be better
+		user = yield model.getAccount(this.session.passport.user.id);
+	  this.session.passport.user = user;
 	}else{
 		return this.redirect('/');
 	}
-	yield this.render('settings', {title: config.site.name, user: user});
+	yield this.render('settings', {title: config.site.name, user: user, script: "settings"});
 }
 
 module.exports.updateAccount = function* updateAccount(){
 	if (this.isAuthenticated()) {
-	  user = this.session.passport.user;
+		// TODO: fix the user fetching to be better
+		user = yield model.getAccount(this.session.passport.user.id);
+		this.session.passport.user = user;
 	}else{
 		return this.redirect('/');
 	}
