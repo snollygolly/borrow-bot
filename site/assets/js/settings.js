@@ -18,10 +18,10 @@ $( document ).ready(function() {
       if (result.message === "Successful!"){
         displayAlert("success", "Your settings have been updated!");
       }else{
-        displayAlert("warning", "Oh no!  Something has gone wrong(" + result.message + ")");
+        displayAlert("warning", "Oh no!  Something has gone wrong (" + result.error + ")");
       }
     }).fail(function(result) {
-      displayAlert("danger", "Oh no!  Something has gone terribly wrong(" + result + ")");
+      displayAlert("danger", "Oh no!  Something has gone terribly wrong (" + JSON.stringify(result, 2, null) + ")");
     });
     event.preventDefault();
   });
