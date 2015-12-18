@@ -22,7 +22,9 @@
   },
   "deploy": {
     "username": "USERNAME",
-    "hostname": "HOSTNAME"
+    "hostname": "HOSTNAME",
+    "path": "~/Borrow-Bot",
+    "screen": "borrow-bot"
   },
   "twilio":{
     "enabled": false,

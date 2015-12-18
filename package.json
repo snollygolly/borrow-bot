@@ -46,7 +46,6 @@
   },
   "devDependencies": {
     "shipit-cli": "^1.4.0",
-    "shipit-deploy": "^2.0.0",
-    "shipit-shared": "^4.1.7"
+    "shipit-deploy": "^2.0.0"
   }
 }
