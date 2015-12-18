@@ -3,6 +3,8 @@
 const config = require('./common').config;
 const Promise = require('./common').Promise;
 const moment = require('./common').moment;
+const createConnection = require('./common').createConnection;
+
 let twilioConfig;
 if (config.twilio.enabled === true){
   console.log("*  : Loading: Twilio [Enabled]");
@@ -22,19 +24,31 @@ const ALERT_RCPT = config.me.number;
 
 module.exports = {
   handleAlerts: function* handleAlerts(post){
-    if (!post.grade){return;}
-    let i = 0;
-    while (i < WORTHY_GRADES.length){
-      if (post.grade.indexOf(WORTHY_GRADES[i]) !== -1 && post.closed === false){
-        // this post has that grade, alert!
-        console.log("** : Sending Alert!");
-        yield sendAlert(post);
-        break;
+    // if there's not a grade, don't bother
+    if (!post.grade){return false;}
+    // if the post is closed, don't bother
+    if (!post.closed){return false;}
+    // get all the accounts we have
+    let accounts = yield getAccounts();
+    // for every person who wants alerts...
+    for (let account of accounts){
+      let grade = `grade_${String(post.grade).toLowerCase()}`;
+      // see if they want to be alerted for this grade of loan
+      if (account[grade] === 1){
+        switch (account.alert_type){
+          case "sms":
+            console.log(`** : Sending Alert (${account.alert_type} - ${account.phone_number})!`);
+            yield sendSMS(post, account);
+            break;
+          case "email":
+            console.log(`** : Sending Alert (${account.alert_type} - ${account.email})!`);
+            // TODO: add me too :)
+            break;
+        }
       }
-      i++;
     }
 
-    function* sendAlert (post){
+    function* sendSMS (post, account){
       if (!post.repay_date){
         post.days = "?";
       }else{
@@ -48,7 +62,7 @@ module.exports = {
       let message;
       try {
         message = yield client.messages.create({
-          to: config.me.number,
+          to: account.phone_number,
         	from: fromNumber,
           body: bodyMessage
         });
@@ -58,6 +72,15 @@ module.exports = {
         throw err
       }
       console.log("** : Alerted successfully: " + message.sid);
+    }
+
+    function* sendEmail (post, account){
+      // TODO: add this :)
+    }
+
+    function* getAccounts(){
+      const connection = yield createConnection();
+      return yield connection.query(`SELECT * FROM accounts WHERE alert_type != 'none';`);
     }
   }
 };
