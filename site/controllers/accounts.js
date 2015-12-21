@@ -38,8 +38,6 @@ module.exports.updateAccount = function* updateAccount(){
 	let modifiedAccount = this.request.body;
 	// check to see if the alerting is in order
 	let grades = countGrades(modifiedAccount);
-	console.log("grades: ", grades);
-	console.log(grades.length);
 	if (grades.length > 3){
 		return this.response.body = {error: "You can only chose three grades to be alerted on."};
 	}
@@ -52,16 +50,10 @@ module.exports.updateAccount = function* updateAccount(){
 		let chosenGrades = [];
 		for (let grade of totalGrades){
 			let gradeName = `grade_${grade}`;
-			console.log("checking account[" + gradeName + "]");
-			console.log(account[gradeName]);
 			if (parseInt(account[gradeName]) === 1){
-				console.log("match");
 				chosenGrades.push(grade);
-			}else{
-				console.log("no match");
 			}
 		}
-		console.log("returning:", chosenGrades);
 		return chosenGrades;
 	}
 }

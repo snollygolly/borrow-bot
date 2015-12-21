@@ -27,7 +27,7 @@ module.exports = {
     // if there's not a grade, don't bother
     if (!post.grade){return false;}
     // if the post is closed, don't bother
-    if (!post.closed){return false;}
+    if (post.closed){return false;}
     // get all the accounts we have
     let accounts = yield getAccounts();
     // for every person who wants alerts...
