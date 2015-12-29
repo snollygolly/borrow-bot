@@ -18,7 +18,8 @@
 		"host": "http://localhost:3000/",
     "clientID": "OAUTH CLIENT ID",
     "clientSecret": "OAUTH CLIENT SECRET",
-    "perPageLimit": 25
+    "perPageLimit": 25,
+    "analytics": "UA-00000000-0"
   },
   "deploy": {
     "username": "USERNAME",
